@@ -378,7 +378,7 @@ function SyncLogSheet() {
   ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
 
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button size="sm" variant="ghost">
           <History className="h-4 w-4 mr-2" /> Sync log
