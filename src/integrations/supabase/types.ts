@@ -88,6 +88,87 @@ export type Database = {
           },
         ]
       }
+      promotions: {
+        Row: {
+          airtable_id: string
+          audience: string | null
+          created_at: string
+          date_range_original: string | null
+          end_date: string | null
+          funding_split: string | null
+          id: string
+          margin_check: string | null
+          marketing_approval: string | null
+          mechanic: string | null
+          messaging: string | null
+          month: string | null
+          offer_type: string | null
+          operations_approval: string | null
+          priority: string | null
+          promo_id: string | null
+          rationale: string | null
+          recommended_items: string[] | null
+          start_date: string | null
+          status: string | null
+          store_group: string | null
+          synced_at: string
+          theme: string[] | null
+          week: string | null
+        }
+        Insert: {
+          airtable_id: string
+          audience?: string | null
+          created_at?: string
+          date_range_original?: string | null
+          end_date?: string | null
+          funding_split?: string | null
+          id?: string
+          margin_check?: string | null
+          marketing_approval?: string | null
+          mechanic?: string | null
+          messaging?: string | null
+          month?: string | null
+          offer_type?: string | null
+          operations_approval?: string | null
+          priority?: string | null
+          promo_id?: string | null
+          rationale?: string | null
+          recommended_items?: string[] | null
+          start_date?: string | null
+          status?: string | null
+          store_group?: string | null
+          synced_at?: string
+          theme?: string[] | null
+          week?: string | null
+        }
+        Update: {
+          airtable_id?: string
+          audience?: string | null
+          created_at?: string
+          date_range_original?: string | null
+          end_date?: string | null
+          funding_split?: string | null
+          id?: string
+          margin_check?: string | null
+          marketing_approval?: string | null
+          mechanic?: string | null
+          messaging?: string | null
+          month?: string | null
+          offer_type?: string | null
+          operations_approval?: string | null
+          priority?: string | null
+          promo_id?: string | null
+          rationale?: string | null
+          recommended_items?: string[] | null
+          start_date?: string | null
+          status?: string | null
+          store_group?: string | null
+          synced_at?: string
+          theme?: string[] | null
+          week?: string | null
+        }
+        Relationships: []
+      }
       stores: {
         Row: {
           address: string | null
@@ -103,6 +184,7 @@ export type Database = {
           store_group: string | null
           store_url: string | null
           telephone: string | null
+          uber_eats_url: string | null
         }
         Insert: {
           address?: string | null
@@ -118,6 +200,7 @@ export type Database = {
           store_group?: string | null
           store_url?: string | null
           telephone?: string | null
+          uber_eats_url?: string | null
         }
         Update: {
           address?: string | null
@@ -133,6 +216,7 @@ export type Database = {
           store_group?: string | null
           store_url?: string | null
           telephone?: string | null
+          uber_eats_url?: string | null
         }
         Relationships: []
       }
@@ -142,6 +226,7 @@ export type Database = {
           id: string
           item_count: number
           note: string | null
+          source: string
           store_count: number
           uploaded_at: string
         }
@@ -150,6 +235,7 @@ export type Database = {
           id?: string
           item_count?: number
           note?: string | null
+          source?: string
           store_count?: number
           uploaded_at?: string
         }
@@ -158,6 +244,7 @@ export type Database = {
           id?: string
           item_count?: number
           note?: string | null
+          source?: string
           store_count?: number
           uploaded_at?: string
         }
