@@ -224,31 +224,30 @@ function StoreReviewsTab({ storeId, store }: { storeId: string; store: any }) {
     try {
       setExporting(true);
       const { exportStoreReportPdf } = await import("@/lib/pdfReport");
+      const { fetchStoreTrend, trendToStoreKpi, buildSingleStoreKpiRows } = await import("@/lib/reviewKpis");
+      // Fetch range-scoped data via the same path used by the comparison
+      // export, so KPIs are computed identically in both reports.
+      const t = await fetchStoreTrend(storeId, activeRange.months);
+      const rangeKpi = trendToStoreKpi(storeId, store?.name ?? "Store", t);
+      const allTime = stats
+        ? {
+            total: stats.total,
+            avgStars: stats.avgStars,
+            responseRate: stats.responseRate,
+            distribution: stats.distribution ?? [0, 0, 0, 0, 0],
+          }
+        : undefined;
       await exportStoreReportPdf(reportRef.current, {
         storeName: store?.name ?? "Store",
         storeGroup: store?.store_group ?? null,
         storeAddress: store?.address ?? null,
         rangeLabel: `Last ${activeRange.months} months`,
         rangeMonths: activeRange.months,
-        kpis: stats
-          ? await (async () => {
-              const { fmtInt, fmtRating, fmtPctFromFraction, fmtDecimal } = await import("@/lib/pdfReport");
-              const dist = stats.distribution ?? [0, 0, 0, 0, 0];
-              const rangeBuckets = (trend ?? []).slice(-activeRange.months);
-              const rangeTotal = rangeBuckets.reduce((a, b) => a + (b.count ?? 0), 0);
-              const avgMonthly = rangeBuckets.length ? rangeTotal / rangeBuckets.length : 0;
-              return [
-                { label: "Total reviews (all time)", value: fmtInt(stats.total) },
-                { label: "Average rating", value: fmtRating(stats.avgStars) },
-                { label: "Reply rate", value: fmtPctFromFraction(stats.responseRate, 1) },
-                { label: "Reviews in last 30 days", value: fmtInt(stats.last30) },
-                { label: `Reviews in selected range (${activeRange.months}m)`, value: fmtInt(rangeTotal) },
-                { label: "Average reviews per month", value: fmtDecimal(avgMonthly, 1) },
-                { label: "5★ reviews (all time)", value: fmtInt(dist[4] ?? 0) },
-                { label: "1★ reviews (all time)", value: fmtInt(dist[0] ?? 0) },
-              ];
-            })()
-          : [],
+        kpis: buildSingleStoreKpiRows({
+          rangeMonths: activeRange.months,
+          rangeStore: rangeKpi,
+          allTime,
+        }),
       });
       toast.success("PDF report downloaded");
     } catch (err) {
