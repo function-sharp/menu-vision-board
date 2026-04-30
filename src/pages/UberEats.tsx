@@ -62,12 +62,30 @@ export default function UberEats() {
   const [storeQuery, setStoreQuery] = useState("");
   const [groupFilter, setGroupFilter] = useState<string>("all");
   const [showMissing, setShowMissing] = useState(false);
+  const [storeSortKey, setStoreSortKey] = useState<StoreSortKey>("name");
+  const [storeSortDir, setStoreSortDir] = useState<SortDir>("asc");
+  const [storePage, setStorePage] = useState(0);
+  const [storePageSize, setStorePageSize] = useState(50);
 
   // Items section state
   const [itemQuery, setItemQuery] = useState("");
   const [itemStoreFilter, setItemStoreFilter] = useState<string>("all");
   const [linkFilter, setLinkFilter] = useState<ItemLinkFilter>("any");
-  const [itemsShown, setItemsShown] = useState(PAGE_SIZE);
+  const [itemSortKey, setItemSortKey] = useState<ItemSortKey>("name");
+  const [itemSortDir, setItemSortDir] = useState<SortDir>("asc");
+  const [itemPage, setItemPage] = useState(0);
+  const [itemPageSize, setItemPageSize] = useState(50);
+
+  const toggleStoreSort = (key: StoreSortKey) => {
+    if (storeSortKey === key) setStoreSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setStoreSortKey(key); setStoreSortDir("asc"); }
+    setStorePage(0);
+  };
+  const toggleItemSort = (key: ItemSortKey) => {
+    if (itemSortKey === key) setItemSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setItemSortKey(key); setItemSortDir("asc"); }
+    setItemPage(0);
+  };
 
   const groups = useMemo(
     () => Array.from(new Set((stores ?? []).map((s) => s.store_group).filter(Boolean))) as string[],
