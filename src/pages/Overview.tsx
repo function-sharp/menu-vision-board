@@ -4,9 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useStores, useAllItems } from "@/hooks/useDashboardData";
+import { useReviewStats, useReviewTrend } from "@/hooks/useReviews";
+import { Stars } from "@/components/StarDistribution";
 import { formatZAR } from "@/lib/format";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { Star, Store as StoreIcon, Utensils, TrendingUp, Layers } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ComposedChart, Line } from "recharts";
+import { Star, Store as StoreIcon, Utensils, TrendingUp, Layers, MessageSquare, ReplyAll, ArrowRight } from "lucide-react";
 
 export default function Overview() {
   const { data: stores, isLoading: sl } = useStores();
