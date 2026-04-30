@@ -260,6 +260,54 @@ export const useReviewTrend = (storeId?: string | null, months = 24, storeIds?: 
     },
   });
 
+export const useReviewStarTrend = (storeId?: string | null, months = 12, storeIds?: string[] | null) =>
+  useQuery({
+    queryKey: ["review-star-trend", storeId ?? "all", months, storeIds ?? null],
+    queryFn: async () => {
+      const since = new Date();
+      since.setMonth(since.getMonth() - months);
+      let q = supabase
+        .from("google_reviews")
+        .select("stars,published_at")
+        .gte("published_at", since.toISOString());
+      if (storeId) q = q.eq("store_id", storeId);
+      else if (storeIds && storeIds.length > 0) q = q.in("store_id", storeIds);
+      const all: any[] = [];
+      const pageSize = 1000;
+      for (let from = 0; ; from += pageSize) {
+        const { data, error } = await q.range(from, from + pageSize - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        all.push(...data);
+        if (data.length < pageSize) break;
+      }
+      const buckets = new Map<string, { s1: number; s2: number; s3: number; s4: number; s5: number }>();
+      for (const r of all) {
+        if (!r.published_at || r.stars == null) continue;
+        const d = new Date(r.published_at);
+        const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+        const b = buckets.get(key) ?? { s1: 0, s2: 0, s3: 0, s4: 0, s5: 0 };
+        const s = Math.max(1, Math.min(5, Math.round(r.stars)));
+        (b as any)[`s${s}`]++;
+        buckets.set(key, b);
+      }
+      const series: { month: string; label: string; s1: number; s2: number; s3: number; s4: number; s5: number }[] = [];
+      for (let i = months - 1; i >= 0; i--) {
+        const d = new Date();
+        d.setUTCDate(1);
+        d.setUTCMonth(d.getUTCMonth() - i);
+        const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+        const b = buckets.get(key) ?? { s1: 0, s2: 0, s3: 0, s4: 0, s5: 0 };
+        series.push({
+          month: key,
+          label: d.toLocaleDateString(undefined, { month: "short", year: "2-digit" }),
+          ...b,
+        });
+      }
+      return series;
+    },
+  });
+
 // Response performance: % responded by star + median reply time per star
 export const useResponsePerformance = (storeId?: string | null, storeIds?: string[] | null) =>
   useQuery({
