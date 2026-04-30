@@ -175,3 +175,46 @@ function StatBox({ label, value, sub }: { label: string; value: string; sub?: st
     </Card>
   );
 }
+
+function StoreReviewsTab({ storeId }: { storeId: string }) {
+  const { data: stats } = useReviewStats(storeId);
+  const { data: reviews, isLoading } = useReviews({ storeId, sortBy: "newest", limit: 100 });
+
+  if (stats && stats.total === 0) {
+    return (
+      <Card>
+        <CardContent className="p-8 text-center text-muted-foreground">
+          No Google reviews linked to this store yet.
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4 space-y-2">
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">Average rating</div>
+            <div className="flex items-center gap-3">
+              <div className="text-3xl font-bold">{stats ? stats.avgStars.toFixed(2) : "—"}</div>
+              {stats && <Stars value={stats.avgStars} size={16} />}
+            </div>
+            <div className="text-xs text-muted-foreground">{stats?.total.toLocaleString() ?? 0} reviews</div>
+          </CardContent>
+        </Card>
+        <Card className="md:col-span-2">
+          <CardHeader className="pb-3"><CardTitle className="text-sm">Distribution</CardTitle></CardHeader>
+          <CardContent>{stats ? <StarDistribution distribution={stats.distribution} /> : <Skeleton className="h-24" />}</CardContent>
+        </Card>
+      </div>
+      {isLoading ? (
+        <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-32" />)}</div>
+      ) : (
+        <div className="grid gap-3">
+          {(reviews ?? []).map((r) => <ReviewCard key={r.id} review={r} />)}
+        </div>
+      )}
+    </div>
+  );
+}
