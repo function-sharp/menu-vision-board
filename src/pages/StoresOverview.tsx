@@ -80,10 +80,21 @@ export default function StoresOverview() {
       if (it.deep_link) m.linked += 1;
       byStore.set(it.store_id, m);
     }
+    const placeByStore = new Map<string, { rating: number | null; count: number | null }>();
+    (places ?? []).forEach((p) => {
+      if (p.store_id) placeByStore.set(p.store_id, { rating: p.total_score, count: p.reviews_count });
+    });
+    const reviewByStore = new Map<string, { reviews: number; avg_stars: number }>();
+    (reviewStats ?? []).forEach((r) => reviewByStore.set(r.store_id, { reviews: r.reviews, avg_stars: r.avg_stars }));
     return stores.map((s) => {
       const agg = byStore.get(s.id);
       const prices = agg?.prices ?? [];
       const avg = prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : null;
+      const place = placeByStore.get(s.id);
+      const review = reviewByStore.get(s.id);
+      // Prefer the live aggregated review count + avg from the database; fall back to the cached Apify summary.
+      const google_rating = review?.avg_stars ?? place?.rating ?? null;
+      const google_reviews = review?.reviews ?? place?.count ?? null;
       return {
         id: s.id,
         slug: s.slug,
@@ -98,9 +109,11 @@ export default function StoresOverview() {
         min_price: prices.length ? Math.min(...prices) : null,
         max_price: prices.length ? Math.max(...prices) : null,
         linked_pct: agg && agg.total > 0 ? agg.linked / agg.total : 0,
+        google_rating,
+        google_reviews,
       };
     });
-  }, [stores, items]);
+  }, [stores, items, places, reviewStats]);
 
   const filtered = useMemo(() => {
     const ql = q.toLowerCase();
