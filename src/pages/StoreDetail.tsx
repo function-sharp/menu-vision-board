@@ -1,13 +1,17 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useStoreBySlug, useStoreItems } from "@/hooks/useDashboardData";
+import { useReviews, useReviewStats } from "@/hooks/useReviews";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ReviewCard } from "@/components/ReviewCard";
+import { Stars, StarDistribution } from "@/components/StarDistribution";
 import { formatZAR, decodeText } from "@/lib/format";
-import { ArrowLeft, Star, MapPin, Phone, Search, ExternalLink } from "lucide-react";
+import { ArrowLeft, Star, MapPin, Phone, Search, ExternalLink, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function StoreDetail() {
