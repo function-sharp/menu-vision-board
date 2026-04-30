@@ -1,25 +1,111 @@
 import { useMemo, useState } from "react";
 import { useAllItems, useStores } from "@/hooks/useDashboardData";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Label } from "@/components/ui/label";
 import { formatZAR, decodeText } from "@/lib/format";
-import { Search, Download } from "lucide-react";
+import { Search, Download, Bookmark, BookmarkPlus, X, MoreVertical, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 
 const PAGE_SIZE = 50;
+
+type Filters = {
+  q: string;
+  storeFilter: string;
+  categoryFilter: string;
+  groupFilter: string;
+};
+
+const EMPTY: Filters = { q: "", storeFilter: "all", categoryFilter: "all", groupFilter: "all" };
+
+const QUICK_PRESETS: Array<{ name: string; filters: Filters }> = [
+  { name: "Pizzas", filters: { ...EMPTY, q: "pizza" } },
+  { name: "Pasta dishes", filters: { ...EMPTY, q: "pasta" } },
+  { name: "GO stores only", filters: { ...EMPTY, groupFilter: "Go" } },
+  { name: "Classic stores", filters: { ...EMPTY, groupFilter: "Classic" } },
+  { name: "Margherita variants", filters: { ...EMPTY, q: "margherita" } },
+];
 
 export default function MenuBrowser() {
   const { data: items, isLoading } = useAllItems();
   const { data: stores } = useStores();
-  const [q, setQ] = useState("");
-  const [storeFilter, setStoreFilter] = useState("all");
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [groupFilter, setGroupFilter] = useState("all");
+  const qc = useQueryClient();
+  const [filters, setFilters] = useState<Filters>(EMPTY);
   const [page, setPage] = useState(0);
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [presetName, setPresetName] = useState("");
+  const [activePresetId, setActivePresetId] = useState<string | null>(null);
+
+  const updateFilter = (patch: Partial<Filters>) => {
+    setFilters((f) => ({ ...f, ...patch }));
+    setPage(0);
+    setActivePresetId(null);
+  };
+
+  const { data: presets } = useQuery({
+    queryKey: ["menu-presets"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("menu_filter_presets")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const savePreset = useMutation({
+    mutationFn: async (name: string) => {
+      const { error } = await supabase.from("menu_filter_presets").insert({
+        name,
+        search_query: filters.q || null,
+        store_slug: filters.storeFilter === "all" ? null : filters.storeFilter,
+        category: filters.categoryFilter === "all" ? null : filters.categoryFilter,
+        store_group: filters.groupFilter === "all" ? null : filters.groupFilter,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Preset saved");
+      qc.invalidateQueries({ queryKey: ["menu-presets"] });
+      setSaveOpen(false);
+      setPresetName("");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed to save"),
+  });
+
+  const deletePreset = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("menu_filter_presets").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_, id) => {
+      toast.success("Preset deleted");
+      qc.invalidateQueries({ queryKey: ["menu-presets"] });
+      if (activePresetId === id) setActivePresetId(null);
+    },
+  });
+
+  const applyPreset = (p: any, id: string | null) => {
+    setFilters({
+      q: p.search_query ?? "",
+      storeFilter: p.store_slug ?? "all",
+      categoryFilter: p.category ?? "all",
+      groupFilter: p.store_group ?? "all",
+    });
+    setPage(0);
+    setActivePresetId(id);
+  };
 
   const categories = useMemo(() => {
     if (!items) return [];
@@ -33,18 +119,19 @@ export default function MenuBrowser() {
 
   const filtered = useMemo(() => {
     if (!items) return [];
-    const ql = q.toLowerCase();
+    const ql = filters.q.toLowerCase();
     return items.filter((i) => {
-      if (q && !i.name.toLowerCase().includes(ql) && !(i.description ?? "").toLowerCase().includes(ql)) return false;
-      if (storeFilter !== "all" && i.stores.slug !== storeFilter) return false;
-      if (categoryFilter !== "all" && i.category !== categoryFilter) return false;
-      if (groupFilter !== "all" && i.stores.store_group !== groupFilter) return false;
+      if (filters.q && !i.name.toLowerCase().includes(ql) && !(i.description ?? "").toLowerCase().includes(ql)) return false;
+      if (filters.storeFilter !== "all" && i.stores.slug !== filters.storeFilter) return false;
+      if (filters.categoryFilter !== "all" && i.category !== filters.categoryFilter) return false;
+      if (filters.groupFilter !== "all" && i.stores.store_group !== filters.groupFilter) return false;
       return true;
     });
-  }, [items, q, storeFilter, categoryFilter, groupFilter]);
+  }, [items, filters]);
 
   const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const hasFilters = filters.q !== "" || filters.storeFilter !== "all" || filters.categoryFilter !== "all" || filters.groupFilter !== "all";
 
   const exportCsv = () => {
     const headers = ["Store", "Group", "Category", "Item", "Description", "Price (ZAR)"];
@@ -67,26 +154,115 @@ export default function MenuBrowser() {
           <h1 className="text-2xl font-bold tracking-tight">Menu Browser</h1>
           <p className="text-muted-foreground text-sm">{filtered.length.toLocaleString()} items {filtered.length !== items?.length && `(of ${items?.length.toLocaleString()})`}</p>
         </div>
-        <Button variant="outline" size="sm" onClick={exportCsv} disabled={!filtered.length}>
-          <Download className="h-4 w-4 mr-2" /> Export CSV
-        </Button>
+        <div className="flex gap-2">
+          <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" disabled={!hasFilters}>
+                <BookmarkPlus className="h-4 w-4 mr-2" /> Save preset
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Save filter preset</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="preset-name">Name</Label>
+                  <Input
+                    id="preset-name"
+                    value={presetName}
+                    onChange={(e) => setPresetName(e.target.value)}
+                    placeholder="e.g. Cape Town pizzas"
+                    onKeyDown={(e) => { if (e.key === "Enter" && presetName.trim()) savePreset.mutate(presetName.trim()); }}
+                  />
+                </div>
+                <div className="rounded-md bg-muted p-3 text-xs space-y-1">
+                  <div className="font-medium text-foreground mb-1">Filters being saved:</div>
+                  <FilterSummary filters={filters} stores={stores ?? []} />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setSaveOpen(false)}>Cancel</Button>
+                <Button onClick={() => savePreset.mutate(presetName.trim())} disabled={!presetName.trim() || savePreset.isPending}>Save</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <Button variant="outline" size="sm" onClick={exportCsv} disabled={!filtered.length}>
+            <Download className="h-4 w-4 mr-2" /> Export CSV
+          </Button>
+        </div>
       </div>
+
+      {/* Preset chips */}
+      <Card>
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-start gap-2 flex-wrap">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide pt-1.5 mr-1">Quick</span>
+            {QUICK_PRESETS.map((p) => (
+              <Badge
+                key={p.name}
+                variant="outline"
+                className="cursor-pointer hover:bg-primary hover:text-primary-foreground hover:border-primary"
+                onClick={() => applyPreset(
+                  { search_query: p.filters.q, store_slug: p.filters.storeFilter === "all" ? null : p.filters.storeFilter, category: p.filters.categoryFilter === "all" ? null : p.filters.categoryFilter, store_group: p.filters.groupFilter === "all" ? null : p.filters.groupFilter },
+                  null
+                )}
+              >
+                {p.name}
+              </Badge>
+            ))}
+          </div>
+          {presets && presets.length > 0 && (
+            <div className="flex items-start gap-2 flex-wrap pt-2 border-t">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide pt-1.5 mr-1">Saved</span>
+              {presets.map((p: any) => (
+                <div key={p.id} className={`group inline-flex items-center rounded-full border text-xs transition-colors ${activePresetId === p.id ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-muted"}`}>
+                  <button onClick={() => applyPreset(p, p.id)} className="flex items-center gap-1.5 pl-3 pr-2 py-1">
+                    <Bookmark className="h-3 w-3" />
+                    {p.name}
+                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className={`px-1.5 py-1 rounded-r-full ${activePresetId === p.id ? "hover:bg-primary-foreground/20" : "hover:bg-muted-foreground/10"}`}>
+                        <MoreVertical className="h-3 w-3" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => deletePreset.mutate(p.id)} className="text-destructive">
+                        <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete preset
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              ))}
+            </div>
+          )}
+          {hasFilters && (
+            <div className="flex items-center justify-between pt-2 border-t">
+              <div className="text-xs text-muted-foreground">
+                <FilterSummary filters={filters} stores={stores ?? []} />
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => { setFilters(EMPTY); setPage(0); setActivePresetId(null); }}>
+                <X className="h-3.5 w-3.5 mr-1" /> Clear filters
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
           <div className="relative md:col-span-2">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search items..." value={q} onChange={(e) => { setQ(e.target.value); setPage(0); }} className="pl-9" />
+            <Input placeholder="Search items..." value={filters.q} onChange={(e) => updateFilter({ q: e.target.value })} className="pl-9" />
           </div>
-          <Select value={storeFilter} onValueChange={(v) => { setStoreFilter(v); setPage(0); }}>
+          <Select value={filters.storeFilter} onValueChange={(v) => updateFilter({ storeFilter: v })}>
             <SelectTrigger><SelectValue placeholder="Store" /></SelectTrigger>
             <SelectContent><SelectItem value="all">All stores</SelectItem>{stores?.map((s) => <SelectItem key={s.id} value={s.slug}>{s.name}</SelectItem>)}</SelectContent>
           </Select>
-          <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setPage(0); }}>
+          <Select value={filters.categoryFilter} onValueChange={(v) => updateFilter({ categoryFilter: v })}>
             <SelectTrigger><SelectValue placeholder="Category" /></SelectTrigger>
             <SelectContent><SelectItem value="all">All categories</SelectItem>{categories.map((c) => <SelectItem key={c} value={c}>{decodeText(c)}</SelectItem>)}</SelectContent>
           </Select>
-          <Select value={groupFilter} onValueChange={(v) => { setGroupFilter(v); setPage(0); }}>
+          <Select value={filters.groupFilter} onValueChange={(v) => updateFilter({ groupFilter: v })}>
             <SelectTrigger><SelectValue placeholder="Group" /></SelectTrigger>
             <SelectContent><SelectItem value="all">All groups</SelectItem>{groups.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
           </Select>
@@ -138,4 +314,16 @@ export default function MenuBrowser() {
       )}
     </div>
   );
+}
+
+function FilterSummary({ filters, stores }: { filters: Filters; stores: any[] }) {
+  const parts: string[] = [];
+  if (filters.q) parts.push(`search: "${filters.q}"`);
+  if (filters.storeFilter !== "all") {
+    const s = stores.find((x) => x.slug === filters.storeFilter);
+    parts.push(`store: ${s?.name ?? filters.storeFilter}`);
+  }
+  if (filters.categoryFilter !== "all") parts.push(`category: ${decodeText(filters.categoryFilter)}`);
+  if (filters.groupFilter !== "all") parts.push(`group: ${filters.groupFilter}`);
+  return <span>{parts.length === 0 ? "No filters" : parts.join(" · ")}</span>;
 }
