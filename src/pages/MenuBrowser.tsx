@@ -292,15 +292,21 @@ export default function MenuBrowser() {
                     const url = i.deep_link ?? i.stores.uber_eats_url ?? null;
                     const isItemLink = !!i.deep_link;
                     return (
-                      <TableRow key={i.id}>
+                      <TableRow
+                        key={i.id}
+                        onClick={() => setSelectedItem(i)}
+                        className="cursor-pointer hover:bg-muted/50"
+                      >
                         <TableCell className="max-w-xs">
                           <div className="font-medium">{decodeText(i.name)}</div>
                           {i.description && <div className="text-xs text-muted-foreground line-clamp-1">{decodeText(i.description)}</div>}
                         </TableCell>
-                        <TableCell><Link className="hover:text-primary hover:underline" to={`/stores/${i.stores.slug}`}>{i.stores.name}</Link></TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Link className="hover:text-primary hover:underline" to={`/stores/${i.stores.slug}`}>{i.stores.name}</Link>
+                        </TableCell>
                         <TableCell className="text-xs text-muted-foreground">{decodeText(i.category ?? "")}</TableCell>
                         <TableCell className="text-right font-semibold whitespace-nowrap">{formatZAR(Number(i.price))}</TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                           {url ? (
                             <a
                               href={url}
