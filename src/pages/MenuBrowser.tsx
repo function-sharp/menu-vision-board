@@ -19,14 +19,17 @@ import { toast } from "sonner";
 
 const PAGE_SIZE = 50;
 
+type LinkFilter = "all" | "item" | "store" | "item_or_store" | "none";
+
 type Filters = {
   q: string;
   storeFilter: string;
   categoryFilter: string;
   groupFilter: string;
+  linkFilter: LinkFilter;
 };
 
-const EMPTY: Filters = { q: "", storeFilter: "all", categoryFilter: "all", groupFilter: "all" };
+const EMPTY: Filters = { q: "", storeFilter: "all", categoryFilter: "all", groupFilter: "all", linkFilter: "all" };
 
 const QUICK_PRESETS: Array<{ name: string; filters: Filters }> = [
   { name: "Pizzas", filters: { ...EMPTY, q: "pizza" } },
@@ -103,6 +106,7 @@ export default function MenuBrowser() {
       storeFilter: p.store_slug ?? "all",
       categoryFilter: p.category ?? "all",
       groupFilter: p.store_group ?? "all",
+      linkFilter: "all",
     });
     setPage(0);
     setActivePresetId(id);
@@ -126,13 +130,21 @@ export default function MenuBrowser() {
       if (filters.storeFilter !== "all" && i.stores.slug !== filters.storeFilter) return false;
       if (filters.categoryFilter !== "all" && i.category !== filters.categoryFilter) return false;
       if (filters.groupFilter !== "all" && i.stores.store_group !== filters.groupFilter) return false;
+      if (filters.linkFilter !== "all") {
+        const hasItem = !!i.deep_link;
+        const hasStore = !!i.stores.uber_eats_url;
+        if (filters.linkFilter === "item" && !hasItem) return false;
+        if (filters.linkFilter === "store" && !(hasStore && !hasItem)) return false;
+        if (filters.linkFilter === "item_or_store" && !(hasItem || hasStore)) return false;
+        if (filters.linkFilter === "none" && (hasItem || hasStore)) return false;
+      }
       return true;
     });
   }, [items, filters]);
 
   const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const hasFilters = filters.q !== "" || filters.storeFilter !== "all" || filters.categoryFilter !== "all" || filters.groupFilter !== "all";
+  const hasFilters = filters.q !== "" || filters.storeFilter !== "all" || filters.categoryFilter !== "all" || filters.groupFilter !== "all" || filters.linkFilter !== "all";
 
   const exportCsv = () => {
     const headers = ["Store", "Group", "Category", "Item", "Description", "Price (ZAR)", "Uber Eats URL"];
@@ -251,7 +263,7 @@ export default function MenuBrowser() {
       </Card>
 
       <Card>
-        <CardContent className="p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+        <CardContent className="p-4 grid grid-cols-1 md:grid-cols-5 gap-3">
           <div className="relative md:col-span-2">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search items..." value={filters.q} onChange={(e) => updateFilter({ q: e.target.value })} className="pl-9" />
@@ -267,6 +279,16 @@ export default function MenuBrowser() {
           <Select value={filters.groupFilter} onValueChange={(v) => updateFilter({ groupFilter: v })}>
             <SelectTrigger><SelectValue placeholder="Group" /></SelectTrigger>
             <SelectContent><SelectItem value="all">All groups</SelectItem>{groups.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+          </Select>
+          <Select value={filters.linkFilter} onValueChange={(v) => updateFilter({ linkFilter: v as LinkFilter })}>
+            <SelectTrigger><SelectValue placeholder="Uber Eats link" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Any link status</SelectItem>
+              <SelectItem value="item">Item link only</SelectItem>
+              <SelectItem value="store">Store link only (no item)</SelectItem>
+              <SelectItem value="item_or_store">Has item or store link</SelectItem>
+              <SelectItem value="none">No link available</SelectItem>
+            </SelectContent>
           </Select>
         </CardContent>
       </Card>
@@ -425,5 +447,15 @@ function FilterSummary({ filters, stores }: { filters: Filters; stores: any[] })
   }
   if (filters.categoryFilter !== "all") parts.push(`category: ${decodeText(filters.categoryFilter)}`);
   if (filters.groupFilter !== "all") parts.push(`group: ${filters.groupFilter}`);
+  if (filters.linkFilter !== "all") {
+    const labels: Record<LinkFilter, string> = {
+      all: "",
+      item: "item link only",
+      store: "store link only",
+      item_or_store: "has item or store link",
+      none: "no link",
+    };
+    parts.push(`link: ${labels[filters.linkFilter]}`);
+  }
   return <span>{parts.length === 0 ? "No filters" : parts.join(" · ")}</span>;
 }
