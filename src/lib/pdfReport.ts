@@ -6,8 +6,22 @@ export interface StorePdfMeta {
   storeGroup?: string | null;
   storeAddress?: string | null;
   rangeLabel: string; // e.g. "Last 24 months"
+  /** Optional months covered by the report — used to compute formatted start/end dates. */
+  rangeMonths?: number;
   generatedAt?: Date;
   kpis?: Array<{ label: string; value: string }>;
+}
+
+/** Build a "Mon YYYY – Mon YYYY (N months)" label from a months window ending now. */
+export function formatRangeWindow(months: number, endDate: Date = new Date()): string {
+  const end = new Date(endDate);
+  const start = new Date(endDate);
+  start.setUTCDate(1);
+  start.setUTCHours(0, 0, 0, 0);
+  start.setUTCMonth(start.getUTCMonth() - (months - 1));
+  const fmt = (d: Date) =>
+    d.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+  return `${fmt(start)} – ${fmt(end)} (${months} month${months === 1 ? "" : "s"})`;
 }
 
 // ---- Shared KPI value formatters (used by callers for consistent display) ----
