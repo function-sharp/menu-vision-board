@@ -193,6 +193,7 @@ function StoreReviewsTab({ storeId }: { storeId: string }) {
 
   return (
     <div className="space-y-4">
+      <ReviewTrendChart storeId={storeId} months={24} title="Review trend — last 24 months" />
       <div className="grid md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4 space-y-2">
@@ -209,7 +210,6 @@ function StoreReviewsTab({ storeId }: { storeId: string }) {
           <CardContent>{stats ? <StarDistribution distribution={stats.distribution} /> : <Skeleton className="h-24" />}</CardContent>
         </Card>
       </div>
-      <ReviewTrendChart storeId={storeId} months={24} title="Review trend — last 24 months" />
       {isLoading ? (
         <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-32" />)}</div>
       ) : (
