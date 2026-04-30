@@ -41,7 +41,7 @@ export function ReviewTrendChart({ storeId, months = 24, title = "Review trend",
                     fontSize: 12,
                   }}
                   formatter={(value: any, name: string) => {
-                    if (name === "Reply rate") return [`${Math.round((Number(value) || 0) * 100)}%`, name];
+                    if (name === "Reply rate") return [`${Math.round(((Number(value) || 0) / 5) * 100)}%`, name];
                     if (name === "Avg rating") return [Number(value).toFixed(2), name];
                     return [value, name];
                   }}
