@@ -444,13 +444,14 @@ export default function UberEats() {
                       <TableHead>
                         <SortHeader label="Link" active={itemSortKey === "link"} dir={itemSortDir} onClick={() => toggleItemSort("link")} />
                       </TableHead>
+                      <TableHead className="w-72">Item deep link</TableHead>
                       <TableHead className="text-right w-40">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {pagedItems.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">
+                        <TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">
                           No items match these filters.
                         </TableCell>
                       </TableRow>
