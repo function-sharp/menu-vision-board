@@ -229,11 +229,11 @@ export default function UberEats() {
               <Input
                 placeholder="Search stores..."
                 value={storeQuery}
-                onChange={(e) => setStoreQuery(e.target.value)}
+                onChange={(e) => { setStoreQuery(e.target.value); setStorePage(0); }}
                 className="pl-9"
               />
             </div>
-            <Select value={groupFilter} onValueChange={setGroupFilter}>
+            <Select value={groupFilter} onValueChange={(v) => { setGroupFilter(v); setStorePage(0); }}>
               <SelectTrigger><SelectValue placeholder="Group" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All groups</SelectItem>
@@ -244,7 +244,7 @@ export default function UberEats() {
             </Select>
           </div>
           <div className="flex items-center gap-2">
-            <Switch id="show-missing" checked={showMissing} onCheckedChange={setShowMissing} />
+            <Switch id="show-missing" checked={showMissing} onCheckedChange={(v) => { setShowMissing(v); setStorePage(0); }} />
             <Label htmlFor="show-missing" className="text-sm font-normal cursor-pointer">
               Show stores missing an Uber Eats link
             </Label>
