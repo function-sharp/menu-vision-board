@@ -236,34 +236,42 @@ function StoreReviewsTab({ storeId, store }: { storeId: string; store: any }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-end gap-1 flex-wrap">
-        {TREND_RANGES.map((r) => (
-          <Button
-            key={r.key}
-            variant={trendRange === r.key ? "default" : "outline"}
-            size="sm"
-            onClick={() => setTrendRange(r.key)}
-            className="h-7 px-2.5 text-xs"
-          >
-            {r.label}
-          </Button>
-        ))}
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <Button size="sm" variant="default" onClick={handleExportPdf} disabled={exporting} className="h-8">
+          <Download className="h-3.5 w-3.5 mr-1.5" />
+          {exporting ? "Generating..." : "Export PDF report"}
+        </Button>
+        <div className="flex items-center gap-1 flex-wrap">
+          {TREND_RANGES.map((r) => (
+            <Button
+              key={r.key}
+              variant={trendRange === r.key ? "default" : "outline"}
+              size="sm"
+              onClick={() => setTrendRange(r.key)}
+              className="h-7 px-2.5 text-xs"
+            >
+              {r.label}
+            </Button>
+          ))}
+        </div>
       </div>
-      <ReviewTrendChart
-        storeId={storeId}
-        months={activeRange.months}
-        title={`Review trend — last ${activeRange.months} months`}
-      />
-      <StarDistributionTrendChart
-        storeId={storeId}
-        months={activeRange.months}
-        title={`Rating distribution — last ${activeRange.months} months`}
-      />
-      <SentimentTrendChart
-        storeId={storeId}
-        months={activeRange.months}
-        title={`Sentiment over time — last ${activeRange.months} months`}
-      />
+      <div ref={reportRef} className="space-y-4 bg-background p-2 rounded-md">
+        <ReviewTrendChart
+          storeId={storeId}
+          months={activeRange.months}
+          title={`Review trend — last ${activeRange.months} months`}
+        />
+        <StarDistributionTrendChart
+          storeId={storeId}
+          months={activeRange.months}
+          title={`Rating distribution — last ${activeRange.months} months`}
+        />
+        <SentimentTrendChart
+          storeId={storeId}
+          months={activeRange.months}
+          title={`Sentiment over time — last ${activeRange.months} months`}
+        />
+      </div>
       <div className="grid md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4 space-y-2">
