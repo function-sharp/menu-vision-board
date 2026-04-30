@@ -1,6 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef, KeyboardEvent } from "react";
 import { Link } from "react-router-dom";
 import { useStores, useAllItems } from "@/hooks/useDashboardData";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,9 +12,20 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatZAR, decodeText } from "@/lib/format";
-import { ExternalLink, Copy, Search, Download, Link2, AlertTriangle, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { ExternalLink, Copy, Search, Download, Link2, AlertTriangle, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X, Loader2, Info } from "lucide-react";
 import { toast } from "sonner";
+
+function isValidUrl(value: string): boolean {
+  if (!value) return false;
+  try {
+    const u = new URL(value);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
 
 type ItemLinkFilter = "any" | "item" | "store_fallback";
 
