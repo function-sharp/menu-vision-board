@@ -1,0 +1,51 @@
+graph LR
+    Auth["/auth<br/>Sign in / Sign up"]
+
+    subgraph Protected["AuthGuard + AppLayout (sidebar + header)"]
+        direction TB
+
+        subgraph Home["Home"]
+            Overview["/<br/>Overview KPIs<br/>Reviews pulse"]
+        end
+
+        subgraph Stores["Stores"]
+            S1["/stores<br/>Card grid"]
+            S2["/stores-overview<br/>Sortable table"]
+            S3["/stores/:slug<br/>StoreDetail<br/>+ Reviews tab + PDF"]
+        end
+
+        subgraph Menu["Menu"]
+            M1["/menu<br/>MenuBrowser<br/>Filters + presets + CSV"]
+            M2["/compare<br/>ItemComparison<br/>Price spread"]
+            M3["/analytics<br/>Categories & Pricing"]
+        end
+
+        subgraph Reviews["Reviews"]
+            R1["/reviews<br/>Tabs: Overview, Stores,<br/>List, AI Insights, Manage Links<br/>+ ComparisonPanel PDF"]
+        end
+
+        subgraph Ops["Operations"]
+            O1["/uber-eats<br/>Uber Eats hub"]
+            O2["/promotions<br/>Airtable mirror"]
+            O3["/upload<br/>Excel ingest"]
+            O4["/activity<br/>Audit feed"]
+        end
+
+        GS[["⌘K Global Search<br/>stores · items · reviews"]]
+    end
+
+    Auth ==>|sign in| Overview
+    Overview --> S3
+    S1 --> S3
+    S2 --> S3
+    M1 --> S3
+    R1 --> S3
+    GS -.-> S3
+    GS -.-> M1
+    GS -.-> R1
+
+    O3 -->|merge-excel| S2
+    O1 -->|scrape-uber-eats| S3
+    R1 -->|sync-google-reviews| R1
+    R1 -->|analyze-reviews| R1
+    O2 -->|sync-airtable| O2
