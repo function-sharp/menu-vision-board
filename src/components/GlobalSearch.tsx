@@ -83,12 +83,12 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
       <CommandInput
         value={query}
         onValueChange={setQuery}
-        placeholder="Search stores, menu items, SKUs, categories..."
+        placeholder="Search stores, menu items, reviews, SKUs, categories..."
       />
       <CommandList>
         {q.length === 0 ? (
-          <CommandEmpty>Start typing to search stores and menu items.</CommandEmpty>
-        ) : storeMatches.length === 0 && itemMatches.length === 0 && categoryMatches.length === 0 ? (
+          <CommandEmpty>Start typing to search stores, menu items, and reviews.</CommandEmpty>
+        ) : storeMatches.length === 0 && itemMatches.length === 0 && categoryMatches.length === 0 && (reviewMatches?.length ?? 0) === 0 ? (
           <CommandEmpty>No results for "{query}".</CommandEmpty>
         ) : null}
 
