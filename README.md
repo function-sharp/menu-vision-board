@@ -7,6 +7,12 @@
 - **Custom domains**: https://storeinsightshub.com · https://www.storeinsightshub.com
 - **Lovable project ID**: `6161f505-ad91-4918-a913-ba51753ff597`
 
+### Diagrams
+- [Architecture diagram](./docs/Architecture_Diagram.mmd) — how the dashboard, Lovable Cloud, edge functions, and external APIs interact
+- [App map](./docs/App_Map.mmd) — every route, grouped by domain, with cross-page jumps and edge-function side effects
+
+> Both files are Mermaid (`.mmd`). Open in any Mermaid viewer (VS Code Mermaid extension, mermaid.live, GitHub preview, or the Lovable artifact viewer).
+
 ---
 
 ## 1. Tech stack
