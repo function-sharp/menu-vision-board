@@ -40,10 +40,16 @@ export function ReviewTrendChart({ storeId, months = 24, title = "Review trend",
                     color: "hsl(var(--popover-foreground))",
                     fontSize: 12,
                   }}
+                  formatter={(value: any, name: string) => {
+                    if (name === "Reply rate") return [`${Math.round(((Number(value) || 0) / 5) * 100)}%`, name];
+                    if (name === "Avg rating") return [Number(value).toFixed(2), name];
+                    return [value, name];
+                  }}
                 />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
                 <Bar yAxisId="left" dataKey="count" name="Reviews" fill="hsl(var(--primary))" opacity={0.6} radius={[3, 3, 0, 0]} />
                 <Line yAxisId="right" type="monotone" dataKey="avg" name="Avg rating" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                <Line yAxisId="right" type="monotone" dataKey="replyRatePlot" name="Reply rate" stroke="hsl(var(--muted-foreground))" strokeWidth={2} strokeDasharray="4 4" dot={false} />
               </ComposedChart>
             </ResponsiveContainer>
           </div>

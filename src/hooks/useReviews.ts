@@ -239,19 +239,21 @@ export const useReviewTrend = (storeId?: string | null, months = 24, storeIds?: 
         buckets.set(key, b);
       }
       // Build full month range so empty months show
-      const series: { month: string; label: string; count: number; avg: number; responseRate: number }[] = [];
+      const series: { month: string; label: string; count: number; avg: number; responseRate: number; replyRatePlot: number }[] = [];
       for (let i = months - 1; i >= 0; i--) {
         const d = new Date();
         d.setUTCDate(1);
         d.setUTCMonth(d.getUTCMonth() - i);
         const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
         const b = buckets.get(key);
+        const rr = b?.count ? +(b.replied / b.count).toFixed(2) : 0;
         series.push({
           month: key,
           label: d.toLocaleDateString(undefined, { month: "short", year: "2-digit" }),
           count: b?.count ?? 0,
           avg: b?.n ? +(b.sum / b.n).toFixed(2) : 0,
-          responseRate: b?.count ? +(b.replied / b.count).toFixed(2) : 0,
+          responseRate: rr,
+          replyRatePlot: +(rr * 5).toFixed(2),
         });
       }
       return series;
