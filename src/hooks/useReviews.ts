@@ -49,6 +49,8 @@ export interface ReviewFilters {
   search?: string;
   sortBy?: "newest" | "oldest" | "highest" | "lowest" | "likes";
   limit?: number;
+  since?: string | null; // ISO date — published_at >= since
+  until?: string | null; // ISO date — published_at < until
 }
 
 export const useGooglePlaces = () =>
