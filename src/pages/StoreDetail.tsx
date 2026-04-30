@@ -180,6 +180,28 @@ function StatBox({ label, value, sub }: { label: string; value: string; sub?: st
   );
 }
 
+function ReportSection({
+  heading,
+  description,
+  children,
+}: {
+  heading: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-2 break-inside-avoid">
+      <div className="border-l-4 border-primary pl-3 py-1">
+        <h3 className="text-base font-semibold leading-tight">{heading}</h3>
+        {description && (
+          <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+        )}
+      </div>
+      {children}
+    </section>
+  );
+}
+
 const TREND_RANGES: Array<{ key: string; label: string; months: number }> = [
   { key: "3m", label: "3M", months: 3 },
   { key: "6m", label: "6M", months: 6 },
