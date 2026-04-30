@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { formatZAR, decodeText } from "@/lib/format";
-import { ArrowLeft, Star, MapPin, Phone, Search } from "lucide-react";
+import { ArrowLeft, Star, MapPin, Phone, Search, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function StoreDetail() {
@@ -70,6 +70,13 @@ export default function StoreDetail() {
             {store.address && <div className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5 text-muted-foreground" /> {store.address}</div>}
             {store.telephone && <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> <a href={`tel:+${store.telephone}`} className="hover:underline">+{store.telephone}</a></div>}
           </div>
+          {store.uber_eats_url && (
+            <Button asChild variant="default" size="sm" className="w-fit">
+              <a href={store.uber_eats_url} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-4 w-4 mr-2" /> Order on Uber Eats
+              </a>
+            </Button>
+          )}
         </CardContent>
       </Card>
 
