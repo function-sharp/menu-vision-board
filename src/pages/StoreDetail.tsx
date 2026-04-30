@@ -177,9 +177,19 @@ function StatBox({ label, value, sub }: { label: string; value: string; sub?: st
   );
 }
 
+const TREND_RANGES: Array<{ key: string; label: string; months: number }> = [
+  { key: "3m", label: "3M", months: 3 },
+  { key: "6m", label: "6M", months: 6 },
+  { key: "12m", label: "12M", months: 12 },
+  { key: "24m", label: "24M", months: 24 },
+  { key: "36m", label: "36M", months: 36 },
+];
+
 function StoreReviewsTab({ storeId }: { storeId: string }) {
   const { data: stats } = useReviewStats(storeId);
   const { data: reviews, isLoading } = useReviews({ storeId, sortBy: "newest", limit: 100 });
+  const [trendRange, setTrendRange] = useState("24m");
+  const activeRange = TREND_RANGES.find((r) => r.key === trendRange) ?? TREND_RANGES[3];
 
   if (stats && stats.total === 0) {
     return (
@@ -193,7 +203,24 @@ function StoreReviewsTab({ storeId }: { storeId: string }) {
 
   return (
     <div className="space-y-4">
-      <ReviewTrendChart storeId={storeId} months={24} title="Review trend — last 24 months" />
+      <div className="flex items-center justify-end gap-1 flex-wrap">
+        {TREND_RANGES.map((r) => (
+          <Button
+            key={r.key}
+            variant={trendRange === r.key ? "default" : "outline"}
+            size="sm"
+            onClick={() => setTrendRange(r.key)}
+            className="h-7 px-2.5 text-xs"
+          >
+            {r.label}
+          </Button>
+        ))}
+      </div>
+      <ReviewTrendChart
+        storeId={storeId}
+        months={activeRange.months}
+        title={`Review trend — last ${activeRange.months} months`}
+      />
       <div className="grid md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4 space-y-2">
