@@ -160,6 +160,39 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
             </CommandGroup>
           </>
         )}
+
+        {reviewMatches && reviewMatches.length > 0 && (
+          <>
+            {(storeMatches.length > 0 || categoryMatches.length > 0 || itemMatches.length > 0) && <CommandSeparator />}
+            <CommandGroup heading="Reviews">
+              {reviewMatches.map((r) => {
+                const storeName = stores?.find((s) => s.id === r.store_id)?.name;
+                const snippet = (r.text ?? "").replace(/\s+/g, " ").slice(0, 90);
+                return (
+                  <CommandItem
+                    key={r.id}
+                    value={`review-${r.id}-${r.reviewer_name ?? ""}-${snippet}`}
+                    onSelect={() => go(`/reviews?focus=${encodeURIComponent(r.review_id)}&tab=list`)}
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2 text-muted-foreground shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="truncate text-sm">{snippet || "(no text)"}</div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {[r.reviewer_name, storeName, r.published_at ? new Date(r.published_at).toLocaleDateString() : null].filter(Boolean).join(" · ")}
+                      </div>
+                    </div>
+                    {r.stars != null && (
+                      <span className="inline-flex items-center gap-0.5 text-xs text-muted-foreground tabular-nums shrink-0">
+                        <Star className="h-3 w-3 fill-current text-primary" />
+                        {r.stars}
+                      </span>
+                    )}
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          </>
+        )}
       </CommandList>
     </CommandDialog>
   );
