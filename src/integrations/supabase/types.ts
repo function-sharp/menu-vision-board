@@ -169,6 +169,45 @@ export type Database = {
         }
         Relationships: []
       }
+      scrape_jobs: {
+        Row: {
+          action: string
+          created_at: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          provider: string
+          result: Json | null
+          status: string
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          provider?: string
+          result?: Json | null
+          status?: string
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          provider?: string
+          result?: Json | null
+          status?: string
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: []
+      }
       stores: {
         Row: {
           address: string | null
