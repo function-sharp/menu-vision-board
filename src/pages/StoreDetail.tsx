@@ -12,6 +12,7 @@ import { ReviewCard } from "@/components/ReviewCard";
 import { Stars, StarDistribution } from "@/components/StarDistribution";
 import { ReviewTrendChart } from "@/components/reviews/ReviewTrendChart";
 import { StarDistributionTrendChart } from "@/components/reviews/StarDistributionTrendChart";
+import { SentimentTrendChart } from "@/components/reviews/SentimentTrendChart";
 import { formatZAR, decodeText } from "@/lib/format";
 import { ArrowLeft, Star, MapPin, Phone, Search, ExternalLink, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
