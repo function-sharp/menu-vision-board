@@ -176,7 +176,7 @@ export function ComparisonPanel({
     }
     try {
       setExporting(true);
-      const { exportStoreReportPdf } = await import("@/lib/pdfReport");
+      const { exportStoreReportPdf, fmtInt, fmtRating, fmtPctFromFraction, fmtDecimal } = await import("@/lib/pdfReport");
       const months = (RANGES.find((r) => r.key === range) ?? RANGES[3]).months;
       const totalReviews = queries.reduce((acc, q) => acc + (q.data?.kpi.totalReviews ?? 0), 0);
       const ratedAvg = queries.reduce(
@@ -209,13 +209,13 @@ export function ComparisonPanel({
         storeGroup: selectedStores.map((s) => s.name).join(" · "),
         rangeLabel: `Last ${months} months`,
         kpis: [
-          { label: "Stores compared", value: String(selectedStores.length) },
-          { label: "Total reviews (across stores)", value: totalReviews.toLocaleString() },
-          { label: "Weighted average rating", value: `${avgAcross.toFixed(2)} / 5` },
-          { label: "Average reply rate", value: `${Math.round(avgReplyRate * 100)}%` },
-          { label: "Reviews in last 30 days", value: last30.toLocaleString() },
-          { label: "Top store by volume", value: `${topVolume.name} (${topVolume.value.toLocaleString()})` },
-          { label: "Top store by rating", value: `${topRating.name} (${topRating.value.toFixed(2)})` },
+          { label: "Stores compared", value: fmtInt(selectedStores.length) },
+          { label: "Total reviews (across stores)", value: fmtInt(totalReviews) },
+          { label: "Weighted average rating", value: fmtRating(avgAcross) },
+          { label: "Average reply rate", value: fmtPctFromFraction(avgReplyRate, 1) },
+          { label: "Reviews in last 30 days", value: fmtInt(last30) },
+          { label: "Top store by volume", value: `${topVolume.name} — ${fmtInt(topVolume.value)}` },
+          { label: "Top store by rating", value: `${topRating.name} — ${fmtDecimal(topRating.value, 2)}` },
         ],
       });
       toast.success("Comparison PDF downloaded");

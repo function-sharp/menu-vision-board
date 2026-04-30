@@ -10,6 +10,36 @@ export interface StorePdfMeta {
   kpis?: Array<{ label: string; value: string }>;
 }
 
+// ---- Shared KPI value formatters (used by callers for consistent display) ----
+
+/** Whole number with thousands separators, e.g. 1284 → "1,284". */
+export const fmtInt = (n: number | null | undefined): string =>
+  n == null || !Number.isFinite(n) ? "—" : Math.round(n).toLocaleString();
+
+/** Decimal with fixed digits + thousands separators, e.g. 4.3 → "4.30". */
+export const fmtDecimal = (n: number | null | undefined, digits = 2): string =>
+  n == null || !Number.isFinite(n)
+    ? "—"
+    : n.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+
+/** Rating out of 5, e.g. 4.321 → "4.32 / 5". */
+export const fmtRating = (n: number | null | undefined): string =>
+  n == null || !Number.isFinite(n) ? "—" : `${fmtDecimal(n, 2)} / 5`;
+
+/** Percent from a 0–1 fraction, e.g. 0.6789 → "67.9%". */
+export const fmtPctFromFraction = (n: number | null | undefined, digits = 1): string =>
+  n == null || !Number.isFinite(n) ? "—" : `${(n * 100).toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits })}%`;
+
+/** Percent already on 0–100 scale. */
+export const fmtPct = (n: number | null | undefined, digits = 1): string =>
+  n == null || !Number.isFinite(n) ? "—" : `${n.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits })}%`;
+
+/** ZAR currency, no fractional cents on big numbers, e.g. 1234.5 → "R 1,234.50". */
+export const fmtZAR = (n: number | null | undefined): string =>
+  n == null || !Number.isFinite(n)
+    ? "—"
+    : `R ${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
 /**
  * Capture the given DOM element and embed it in a multi-page A4 PDF
  * along with a header (store name, range, KPIs) and footer.
@@ -92,7 +122,10 @@ export async function exportStoreReportPdf(
     cursorY += 24;
 
     const rowH = 22;
-    const labelColW = contentWidth * 0.55;
+    const padX = 12;
+    // Wider metric column; values right-aligned in a narrower numeric column.
+    const labelColW = contentWidth * 0.7;
+    const valueColW = contentWidth - labelColW;
     const tableTop = cursorY;
     const rows = meta.kpis;
     const tableH = rowH * (rows.length + 1);
@@ -106,12 +139,12 @@ export async function exportStoreReportPdf(
     pdf.setLineWidth(0.5);
     pdf.rect(margin, tableTop, contentWidth, tableH);
 
-    // Header text
+    // Header text — value header right-aligned to match the value column
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(9);
     pdf.setTextColor(80);
-    pdf.text("METRIC", margin + 10, tableTop + 14);
-    pdf.text("VALUE", margin + labelColW + 10, tableTop + 14);
+    pdf.text("METRIC", margin + padX, tableTop + 14);
+    pdf.text("VALUE", margin + contentWidth - padX, tableTop + 14, { align: "right" });
 
     // Body rows with zebra striping + separators
     rows.forEach((k, i) => {
@@ -123,13 +156,21 @@ export async function exportStoreReportPdf(
       pdf.setDrawColor(232);
       pdf.line(margin, y, margin + contentWidth, y);
 
+      // Metric label (left, normal weight, slightly muted)
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(10);
       pdf.setTextColor(60);
-      pdf.text(k.label, margin + 10, y + 14);
-      pdf.setFont("helvetica", "bold");
+      const labelMaxW = labelColW - padX * 2;
+      const labelLines = pdf.splitTextToSize(k.label, labelMaxW);
+      pdf.text(labelLines[0] ?? k.label, margin + padX, y + 14);
+
+      // Value (right-aligned, monospaced for clean digit alignment)
+      pdf.setFont("courier", "bold");
+      pdf.setFontSize(10);
       pdf.setTextColor(0);
-      pdf.text(k.value, margin + labelColW + 10, y + 14);
+      const valueMaxW = valueColW - padX * 2;
+      const valueLines = pdf.splitTextToSize(k.value, valueMaxW);
+      pdf.text(valueLines[0] ?? k.value, margin + contentWidth - padX, y + 14, { align: "right" });
     });
 
     // Vertical column divider
