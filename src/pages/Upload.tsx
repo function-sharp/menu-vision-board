@@ -10,6 +10,7 @@ import { Upload as UploadIcon, FileSpreadsheet, CheckCircle2, AlertCircle, Refre
 import { useUploads } from "@/hooks/useDashboardData";
 import { slugify, decodeText } from "@/lib/format";
 import { toast } from "sonner";
+import { logActivity } from "@/lib/activityLog";
 import { formatDistanceToNow } from "date-fns";
 
 type SyncState = { kind: "idle" } | { kind: "syncing" } | { kind: "done"; storesUpdated: number; promotionsUpserted: number; promotionsRemoved: number; unmatched: string[]; skipped: number } | { kind: "error"; msg: string };
@@ -40,11 +41,23 @@ export default function Upload() {
         unmatched: data.stores_unmatched ?? [],
       });
       toast.success(`Pulled: ${data.stores_filled} filled, ${data.stores_skipped_supabase_wins} kept (Supabase wins)`);
+      void logActivity({
+        action: "sync.airtable.pull",
+        entity_type: "sync",
+        entity_label: "Airtable → Supabase",
+        details: {
+          stores_filled: data.stores_filled,
+          stores_skipped: data.stores_skipped_supabase_wins,
+          promotions_upserted: data.promotions_upserted,
+          promotions_removed: data.promotions_removed,
+        },
+      });
       qc.invalidateQueries();
     } catch (e: any) {
       console.error(e);
       setSyncStatus({ kind: "error", msg: e.message ?? "Sync failed" });
       toast.error("Airtable sync failed: " + (e.message ?? "unknown"));
+      void logActivity({ action: "sync.airtable.pull.failed", entity_type: "sync", details: { error: e.message } });
     }
   };
 
@@ -89,12 +102,31 @@ export default function Upload() {
       toast.success(
         `Merged: ${data.stores_inserted}+${data.stores_merged} stores · ${data.items_inserted}+${data.items_merged} items`,
       );
+      void logActivity({
+        action: "upload.excel.merged",
+        entity_type: "upload",
+        entity_label: file.name,
+        details: {
+          stores_inserted: data.stores_inserted,
+          stores_merged: data.stores_merged,
+          items_inserted: data.items_inserted,
+          items_merged: data.items_merged,
+          items_kept: data.items_kept_untouched,
+          note: note || null,
+        },
+      });
       qc.invalidateQueries();
       setNote("");
     } catch (e: any) {
       console.error(e);
       setStatus({ kind: "error", msg: e.message ?? "Upload failed" });
       toast.error("Upload failed: " + (e.message ?? "unknown"));
+      void logActivity({
+        action: "upload.excel.failed",
+        entity_type: "upload",
+        entity_label: file.name,
+        details: { error: e.message },
+      });
     }
   };
 
