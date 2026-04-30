@@ -358,6 +358,48 @@ export type Database = {
         }
         Relationships: []
       }
+      review_insights: {
+        Row: {
+          action_items: Json | null
+          generated_at: string
+          id: string
+          model: string | null
+          period: string
+          raw: Json | null
+          sample_size: number | null
+          store_id: string | null
+          summary: string | null
+          themes_negative: Json | null
+          themes_positive: Json | null
+        }
+        Insert: {
+          action_items?: Json | null
+          generated_at?: string
+          id?: string
+          model?: string | null
+          period: string
+          raw?: Json | null
+          sample_size?: number | null
+          store_id?: string | null
+          summary?: string | null
+          themes_negative?: Json | null
+          themes_positive?: Json | null
+        }
+        Update: {
+          action_items?: Json | null
+          generated_at?: string
+          id?: string
+          model?: string | null
+          period?: string
+          raw?: Json | null
+          sample_size?: number | null
+          store_id?: string | null
+          summary?: string | null
+          themes_negative?: Json | null
+          themes_positive?: Json | null
+        }
+        Relationships: []
+      }
       scrape_jobs: {
         Row: {
           action: string
@@ -516,7 +558,21 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      review_store_stats: {
+        Row: {
+          avg_reply_days: number | null
+          avg_stars: number | null
+          avg_stars_30d: number | null
+          avg_stars_7d: number | null
+          last_review_at: string | null
+          response_rate: number | null
+          reviews: number | null
+          reviews_30d: number | null
+          reviews_7d: number | null
+          store_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       match_store_for_place_title: {

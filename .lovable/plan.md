@@ -1,107 +1,127 @@
 ## Goal
 
-Add a Google **Customer Reviews** feature powered by your Apify dataset (`bg5J0WsBCpIhuxNDp`, ~28,846 reviews across 3 stores so far: Montecasino, Belvedere, Blouberg). Reviews are ingested into Lovable Cloud, surfaced on a new **Reviews** page, and shown on each store's detail page.
+Expand **Reviews** into a flagship hub on par with Uber Eats, **without changing anything that already works**. Everything new is additive — existing routes, components, queries, and behaviour stay intact.
 
-## What you'll get
+## Guarantees about what does NOT change
 
-1. **New "Reviews" page** in the sidebar (`/reviews`) with:
-   - KPI cards: total reviews, average stars, % responded by owner, last 30 days count
-   - Star distribution bar (5★…1★)
-   - Detailed sub-rating averages (Food, Service, Atmosphere)
-   - Filters: store, star rating, has-text, has-owner-response, date range, search query
-   - Sortable list of review cards (newest, highest, lowest, most liked) with reviewer name/photo, stars, date, full text, owner response, sub-ratings
-   - "Sync from Apify" button (admin) + last-sync indicator
-   - CSV export of the filtered view
-2. **Per-store Reviews tab** on `/stores/:slug` showing that store's reviews, average rating, and distribution
-3. **Overview page** gets a small "Recent reviews" widget (latest 5 across all stores)
-4. Activity log entries for every sync run (action `reviews.sync`, with counts inserted/updated)
+- `/reviews` route, sidebar entry, sync button, CSV export, manual sync function (`sync-google-reviews`) — unchanged
+- `useReviews` / `useReviewStats` / `useGooglePlaces` hooks — unchanged signatures (only new hooks added)
+- Existing `ReviewCard`, `StarDistribution`, `Stars` components — unchanged
+- StoreDetail's current Reviews tab — unchanged (we'll add an optional widget *above* the existing list, behind a feature toggle if needed)
+- Activity Log, Overview, Uber Eats, Stores, Menu pages — unchanged
 
-## Data model (new tables)
+## What gets added
+
+### 1. New tabbed layout on `/reviews` — wraps the existing page
+
+`Reviews.tsx` becomes a thin wrapper that renders 5 tabs. The current content moves verbatim into the **"Reviews"** tab so its UX is byte-identical. New tabs surround it:
 
 ```text
-google_places
-  id uuid pk
-  place_id text unique          -- e.g. ChIJi9sSL6x2lR4RhDUxxCIq-1w
-  store_id uuid null            -- linked store (nullable; matched by name/slug)
-  title text                    -- "Col'Cacchio Montecasino"
-  address, city, postal_code, country_code text
-  lat, lng numeric
-  total_score numeric           -- aggregate Google score
-  reviews_count int             -- aggregate Google count
-  url text                      -- maps url
-  cid text, fid text, kgmid text
-  last_synced_at timestamptz
-  created_at timestamptz default now()
-
-google_reviews
-  id uuid pk
-  review_id text unique         -- Apify reviewId, dedupe key
-  place_id text fk -> google_places.place_id
-  store_id uuid null            -- denormalised from place
-  reviewer_id text
-  reviewer_name text
-  reviewer_photo_url text
-  reviewer_review_count int
-  is_local_guide bool
-  stars int
-  text text
-  text_translated text
-  original_language text
-  published_at timestamptz
-  publish_at_label text         -- "a day ago"
-  likes_count int
-  response_text text
-  response_at timestamptz
-  detailed_food int, detailed_service int, detailed_atmosphere int
-  review_url text
-  image_urls text[]
-  raw jsonb                     -- full payload for forward-compat
-  created_at timestamptz default now()
+[Overview] [Stores] [Reviews ← existing UI]  [Insights] [Manage Links]
 ```
 
-RLS: authenticated read for both; insert/update restricted to service-role (used only by the edge function). Indexes on `store_id`, `place_id`, `published_at desc`, `stars`.
+If you ever want to revert, the "Reviews" tab alone is the original page.
 
-## Sync edge function
+### Tab — Overview (new)
+- KPI strip: total / avg stars / response rate / avg reply time / unique reviewers / 30-day delta
+- **Monthly trend chart** (recharts): review volume bars + avg-rating line, last 24 months
+- **Response performance**: % responded by star, median reply time per star
+- **Top 5 stores by volume** + **Bottom 5 by rating** leaderboards with sparklines
 
-`supabase/functions/sync-google-reviews/index.ts`
-- Hardcodes the Apify dataset id; `APIFY_TOKEN` already exists as a secret
-- Paginates dataset (`limit=1000&offset=…`) until exhausted (~29 pages today)
-- Upserts `google_places` from each row's place fields
-- Upserts `google_reviews` keyed on `review_id`
-- Attempts to match `place_id`/title to existing `stores` rows (case-insensitive name contains "Col'Cacchio X" → matches store with same trailing name) and stores `store_id`
-- Returns `{ inserted, updated, places, total }` and writes a `sync_runs` row + `activity_log` entry
-- Triggered manually from the Reviews page via `supabase.functions.invoke("sync-google-reviews")`
+### Tab — Stores (new)
+- Sortable table: store · group · total reviews · avg stars · 30-day reviews · 30-day avg · 12-month sparkline · response rate · avg reply time · last review
+- Row click → existing `/stores/:slug` (which already has the Reviews tab)
+- Filters: store group, min reviews
 
-The user can later swap to a different Apify dataset by editing one constant (or we can promote it to a secret if you prefer).
+### Tab — Reviews (existing UI, untouched)
+- The whole current page is moved here as a child component (`ReviewsListTab`), unchanged.
 
-## Frontend pieces
+### Tab — Insights (new, AI)
+- "Generate insights for [store / period]" button → calls new `analyze-reviews` edge function (Lovable AI Gateway, `google/gemini-2.5-flash`)
+- Returns + caches `{summary, themes_positive[], themes_negative[], action_items[]}`
+- Cards render themes with example review quotes; click a quote opens it in the Reviews tab
 
-- `src/hooks/useReviews.ts` — `useReviews(filters)`, `useReviewStats(storeId?)`, `useSyncReviews()`
-- `src/pages/Reviews.tsx` — main page (KPIs, filters, distribution, list, export)
-- `src/components/ReviewCard.tsx` — review row with avatar, stars, body, owner response collapsible
-- `src/components/StarDistribution.tsx` — 5→1 bar chart
-- `src/pages/StoreDetail.tsx` — add a Tabs wrapper with "Menu" + "Reviews"
-- `src/pages/Overview.tsx` — add "Latest reviews" card
-- `src/components/AppSidebar.tsx` — new entry "Reviews" (icon: `MessageSquare`)
-- `src/App.tsx` — register `/reviews`
-- `src/components/GlobalSearch.tsx` — include reviewer names + review snippets
+### Tab — Manage Links (new)
+- Lists all 25 `google_places` with Google rating + review count
+- Inline-editable store mapping for the 3 unlinked places (Durbanville / Montecasino / Northcliff) using existing inline-edit pattern from Uber Eats
+- "Open on Google Maps" + copy URL buttons
+- Trigger from migration auto-propagates the link to all reviews
 
-## Store matching
+## Cross-app integration (additive only)
 
-3 places map cleanly to existing stores by suffix:
+- **Global Search (`⌘K`)**: add a "Reviews" result group below the existing groups (Stores / Items / Categories). Clicking a result navigates to `/reviews?focus=<reviewId>` — the Reviews tab opens, scrolls the matching review into view, and pulses it. Existing search behaviour for stores/items/categories unchanged.
+- **Stores Overview page**: add **two new optional columns** at the end (Google rating · Google reviews count) sourced from `google_places`. Existing columns and sorts unchanged.
+- **Overview page**: add a single new "Reviews pulse" card at the bottom of the existing grid (does not displace anything).
+- **StoreDetail Reviews tab**: prepend a small **trend chart card** above the existing Avg/Distribution/List trio. The existing trio renders unchanged below it. If you don't want the prepend, we can put it inside a collapsible.
 
-```text
-Col'Cacchio Montecasino → store slug montecasino
-Col'Cacchio Belvedere   → store slug belvedere
-Col'Cacchio Blouberg    → store slug blouberg
+## Backend additions
+
+### Migration (purely additive — no changes to existing tables)
+
+```sql
+CREATE TABLE public.review_insights (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id uuid NULL,
+  period text NOT NULL,             -- '7d'|'30d'|'90d'|'12m'|'all'
+  generated_at timestamptz DEFAULT now(),
+  model text,
+  summary text,
+  themes_positive jsonb,
+  themes_negative jsonb,
+  action_items jsonb,
+  raw jsonb,
+  UNIQUE (store_id, period)
+);
+ALTER TABLE public.review_insights ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Authenticated read review_insights" ON public.review_insights
+  FOR SELECT TO authenticated USING (true);
+
+-- Read-only convenience view for the Stores tab
+CREATE OR REPLACE VIEW public.review_store_stats AS
+SELECT
+  store_id,
+  count(*) AS reviews,
+  avg(stars)::numeric(4,2) AS avg_stars,
+  count(*) FILTER (where response_text is not null)::float / nullif(count(*),0) AS response_rate,
+  avg(extract(epoch from (response_at - published_at))/86400) AS avg_reply_days,
+  max(published_at) AS last_review_at,
+  count(*) FILTER (where published_at >= now() - interval '30 days') AS reviews_30d,
+  avg(stars) FILTER (where published_at >= now() - interval '30 days')::numeric(4,2) AS avg_stars_30d
+FROM google_reviews
+WHERE store_id IS NOT NULL
+GROUP BY store_id;
 ```
 
-Matching runs at sync time; unmatched places are kept (visible on the global Reviews page) and can be linked later.
+### New edge function `analyze-reviews`
+- Pulls latest ~300 text reviews for the requested store/period
+- Sends to `google/gemini-2.5-flash` via Lovable AI Gateway with strict JSON schema prompt
+- Upserts into `review_insights`
+- Returns the cached row when one already exists newer than 24h (avoids token spend)
 
-## Out of scope (let me know if you want any)
+## New frontend files (none replace existing files)
 
-- Auto-scheduled sync (cron) — first version is manual button only
-- Sentiment analysis / topic extraction via Lovable AI
-- Replying to reviews from the dashboard
+- `src/pages/Reviews.tsx` — thin wrapper with Tabs (existing page content extracted into `ReviewsListTab`)
+- `src/components/reviews/OverviewTab.tsx`
+- `src/components/reviews/StoresTab.tsx`
+- `src/components/reviews/ReviewsListTab.tsx` (the current `Reviews.tsx` body, lifted as-is)
+- `src/components/reviews/InsightsTab.tsx`
+- `src/components/reviews/ManageLinksTab.tsx`
+- `src/components/reviews/ReviewTrendChart.tsx`
+- `src/components/reviews/ResponsePerformance.tsx`
+- `src/components/reviews/StoreLeaderboard.tsx`
+- `src/hooks/useReviews.ts` — append `useReviewTrend`, `useStoreReviewStats`, `useReviewInsights`, `useGenerateInsights` (existing exports untouched)
 
-After you approve, I'll create the migration, deploy the edge function, run the first sync, and build the UI.
+Touched (additive only):
+- `src/components/GlobalSearch.tsx` — add a Reviews result group
+- `src/pages/StoresOverview.tsx` — append two new columns
+- `src/pages/Overview.tsx` — append "Reviews pulse" card
+- `src/pages/StoreDetail.tsx` — prepend trend card inside Reviews tab
+
+## Out of scope
+
+- Replying to Google reviews from the dashboard (needs Google Business Profile OAuth)
+- Scheduled syncs
+- Per-reviewer pages
+- Any change to existing store/menu/promotion/upload flows
+
+After approval I'll build everything in one pass.
