@@ -6,22 +6,30 @@ import { useStoreReviewStats } from "@/hooks/useReviews";
 import { useStores } from "@/hooks/useDashboardData";
 import { useMemo } from "react";
 
-export function StoreLeaderboard({ mode }: { mode: "top" | "bottom" }) {
+import { useScopedStoreIds, type ReviewScope, defaultScope } from "./ReviewFiltersBar";
+
+export function StoreLeaderboard({ mode, scope = defaultScope }: { mode: "top" | "bottom"; scope?: ReviewScope }) {
   const { data: stats, isLoading } = useStoreReviewStats();
   const { data: stores } = useStores();
+  const { storeId, storeIds } = useScopedStoreIds(scope);
 
   const rows = useMemo(() => {
     if (!stats || !stores) return [];
     const storeMap = new Map(stores.map((s) => [s.id, s]));
-    const enriched = stats
+    let enriched = stats
       .filter((s) => storeMap.has(s.store_id))
       .map((s) => ({ ...s, store: storeMap.get(s.store_id)! }));
+    if (storeId) enriched = enriched.filter((s) => s.store_id === storeId);
+    else if (storeIds && storeIds.length > 0) {
+      const set = new Set(storeIds);
+      enriched = enriched.filter((s) => set.has(s.store_id));
+    }
     if (mode === "top") {
       return [...enriched].sort((a, b) => b.reviews - a.reviews).slice(0, 5);
     }
     // bottom: lowest rated, with ≥ 50 reviews to be meaningful
     return [...enriched].filter((s) => s.reviews >= 50).sort((a, b) => a.avg_stars - b.avg_stars).slice(0, 5);
-  }, [stats, stores, mode]);
+  }, [stats, stores, mode, storeId, storeIds]);
 
   return (
     <Card>
