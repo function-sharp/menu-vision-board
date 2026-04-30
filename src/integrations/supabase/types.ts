@@ -14,7 +14,125 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      menu_items: {
+        Row: {
+          category: string | null
+          created_at: string
+          currency: string | null
+          deep_link: string | null
+          description: string | null
+          id: string
+          name: string
+          price: number | null
+          store_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          currency?: string | null
+          deep_link?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          price?: number | null
+          store_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          currency?: string | null
+          deep_link?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          price?: number | null
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_items_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stores: {
+        Row: {
+          address: string | null
+          created_at: string
+          cuisine: string | null
+          id: string
+          item_count: number
+          name: string
+          price_range: string | null
+          rating: number | null
+          rating_count: number | null
+          slug: string
+          store_group: string | null
+          store_url: string | null
+          telephone: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          cuisine?: string | null
+          id?: string
+          item_count?: number
+          name: string
+          price_range?: string | null
+          rating?: number | null
+          rating_count?: number | null
+          slug: string
+          store_group?: string | null
+          store_url?: string | null
+          telephone?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          cuisine?: string | null
+          id?: string
+          item_count?: number
+          name?: string
+          price_range?: string | null
+          rating?: number | null
+          rating_count?: number | null
+          slug?: string
+          store_group?: string | null
+          store_url?: string | null
+          telephone?: string | null
+        }
+        Relationships: []
+      }
+      uploads: {
+        Row: {
+          filename: string | null
+          id: string
+          item_count: number
+          note: string | null
+          store_count: number
+          uploaded_at: string
+        }
+        Insert: {
+          filename?: string | null
+          id?: string
+          item_count?: number
+          note?: string | null
+          store_count?: number
+          uploaded_at?: string
+        }
+        Update: {
+          filename?: string | null
+          id?: string
+          item_count?: number
+          note?: string | null
+          store_count?: number
+          uploaded_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
