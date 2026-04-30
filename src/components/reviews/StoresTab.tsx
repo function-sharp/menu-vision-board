@@ -123,6 +123,7 @@ export function StoresTab({ scope = defaultScope }: { scope?: ReviewScope }) {
                 <TableRow>
                   <SortHead label="Store" k="name" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
                   <SortHead label="Group" k="group" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
+                  <TableHead>City</TableHead>
                   <SortHead label="Reviews" k="reviews" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} align="right" />
                   <SortHead label="Avg ★" k="avg_stars" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} align="right" />
                   <SortHead label="30d count" k="reviews_30d" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} align="right" />
@@ -136,7 +137,7 @@ export function StoresTab({ scope = defaultScope }: { scope?: ReviewScope }) {
               <TableBody>
                 {rows.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center text-sm text-muted-foreground py-8">
+                    <TableCell colSpan={11} className="text-center text-sm text-muted-foreground py-8">
                       No stores match.
                     </TableCell>
                   </TableRow>
@@ -149,6 +150,7 @@ export function StoresTab({ scope = defaultScope }: { scope?: ReviewScope }) {
                       </Link>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{r.group ?? "—"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{r.city ?? "—"}</TableCell>
                     <TableCell className="text-right tabular-nums">{r.reviews.toLocaleString()}</TableCell>
                     <TableCell className="text-right">
                       <div className="inline-flex items-center gap-1.5">
