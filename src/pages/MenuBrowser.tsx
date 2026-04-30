@@ -263,7 +263,7 @@ export default function MenuBrowser() {
       </Card>
 
       <Card>
-        <CardContent className="p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+        <CardContent className="p-4 grid grid-cols-1 md:grid-cols-5 gap-3">
           <div className="relative md:col-span-2">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search items..." value={filters.q} onChange={(e) => updateFilter({ q: e.target.value })} className="pl-9" />
@@ -279,6 +279,16 @@ export default function MenuBrowser() {
           <Select value={filters.groupFilter} onValueChange={(v) => updateFilter({ groupFilter: v })}>
             <SelectTrigger><SelectValue placeholder="Group" /></SelectTrigger>
             <SelectContent><SelectItem value="all">All groups</SelectItem>{groups.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+          </Select>
+          <Select value={filters.linkFilter} onValueChange={(v) => updateFilter({ linkFilter: v as LinkFilter })}>
+            <SelectTrigger><SelectValue placeholder="Uber Eats link" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Any link status</SelectItem>
+              <SelectItem value="item">Item link only</SelectItem>
+              <SelectItem value="store">Store link only (no item)</SelectItem>
+              <SelectItem value="item_or_store">Has item or store link</SelectItem>
+              <SelectItem value="none">No link available</SelectItem>
+            </SelectContent>
           </Select>
         </CardContent>
       </Card>
