@@ -156,6 +156,7 @@ export function StoresTab({ scope = defaultScope }: { scope?: ReviewScope }) {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10"><span className="sr-only">Compare</span></TableHead>
                   <SortHead label="Store" k="name" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
                   <SortHead label="Group" k="group" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
                   <TableHead>City</TableHead>
