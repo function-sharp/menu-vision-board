@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { toast } from "sonner";
 import { useStoreBySlug, useStoreItems } from "@/hooks/useDashboardData";
 import { useReviews, useReviewStats } from "@/hooks/useReviews";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +15,7 @@ import { ReviewTrendChart } from "@/components/reviews/ReviewTrendChart";
 import { StarDistributionTrendChart } from "@/components/reviews/StarDistributionTrendChart";
 import { SentimentTrendChart } from "@/components/reviews/SentimentTrendChart";
 import { formatZAR, decodeText } from "@/lib/format";
-import { ArrowLeft, Star, MapPin, Phone, Search, ExternalLink, MessageSquare } from "lucide-react";
+import { ArrowLeft, Star, MapPin, Phone, Search, ExternalLink, MessageSquare, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function StoreDetail() {
@@ -160,7 +161,7 @@ export default function StoreDetail() {
         </TabsContent>
 
         <TabsContent value="reviews">
-          <StoreReviewsTab storeId={store.id} />
+          <StoreReviewsTab storeId={store.id} store={store} />
         </TabsContent>
       </Tabs>
     </div>
@@ -187,11 +188,41 @@ const TREND_RANGES: Array<{ key: string; label: string; months: number }> = [
   { key: "36m", label: "36M", months: 36 },
 ];
 
-function StoreReviewsTab({ storeId }: { storeId: string }) {
+function StoreReviewsTab({ storeId, store }: { storeId: string; store: any }) {
   const { data: stats } = useReviewStats(storeId);
   const { data: reviews, isLoading } = useReviews({ storeId, sortBy: "newest", limit: 100 });
   const [trendRange, setTrendRange] = useState("24m");
   const activeRange = TREND_RANGES.find((r) => r.key === trendRange) ?? TREND_RANGES[3];
+  const reportRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportPdf = async () => {
+    if (!reportRef.current) return;
+    try {
+      setExporting(true);
+      const { exportStoreReportPdf } = await import("@/lib/pdfReport");
+      await exportStoreReportPdf(reportRef.current, {
+        storeName: store?.name ?? "Store",
+        storeGroup: store?.store_group ?? null,
+        storeAddress: store?.address ?? null,
+        rangeLabel: `Last ${activeRange.months} months`,
+        kpis: stats
+          ? [
+              { label: "Total reviews", value: stats.total.toLocaleString() },
+              { label: "Avg rating", value: stats.avgStars.toFixed(2) },
+              { label: "Reply rate", value: `${Math.round(stats.responseRate * 100)}%` },
+              { label: "Last 30 days", value: stats.last30.toLocaleString() },
+            ]
+          : [],
+      });
+      toast.success("PDF report downloaded");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to generate PDF");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   if (stats && stats.total === 0) {
     return (
@@ -205,34 +236,42 @@ function StoreReviewsTab({ storeId }: { storeId: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-end gap-1 flex-wrap">
-        {TREND_RANGES.map((r) => (
-          <Button
-            key={r.key}
-            variant={trendRange === r.key ? "default" : "outline"}
-            size="sm"
-            onClick={() => setTrendRange(r.key)}
-            className="h-7 px-2.5 text-xs"
-          >
-            {r.label}
-          </Button>
-        ))}
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <Button size="sm" variant="default" onClick={handleExportPdf} disabled={exporting} className="h-8">
+          <Download className="h-3.5 w-3.5 mr-1.5" />
+          {exporting ? "Generating..." : "Export PDF report"}
+        </Button>
+        <div className="flex items-center gap-1 flex-wrap">
+          {TREND_RANGES.map((r) => (
+            <Button
+              key={r.key}
+              variant={trendRange === r.key ? "default" : "outline"}
+              size="sm"
+              onClick={() => setTrendRange(r.key)}
+              className="h-7 px-2.5 text-xs"
+            >
+              {r.label}
+            </Button>
+          ))}
+        </div>
       </div>
-      <ReviewTrendChart
-        storeId={storeId}
-        months={activeRange.months}
-        title={`Review trend — last ${activeRange.months} months`}
-      />
-      <StarDistributionTrendChart
-        storeId={storeId}
-        months={activeRange.months}
-        title={`Rating distribution — last ${activeRange.months} months`}
-      />
-      <SentimentTrendChart
-        storeId={storeId}
-        months={activeRange.months}
-        title={`Sentiment over time — last ${activeRange.months} months`}
-      />
+      <div ref={reportRef} className="space-y-4 bg-background p-2 rounded-md">
+        <ReviewTrendChart
+          storeId={storeId}
+          months={activeRange.months}
+          title={`Review trend — last ${activeRange.months} months`}
+        />
+        <StarDistributionTrendChart
+          storeId={storeId}
+          months={activeRange.months}
+          title={`Rating distribution — last ${activeRange.months} months`}
+        />
+        <SentimentTrendChart
+          storeId={storeId}
+          months={activeRange.months}
+          title={`Sentiment over time — last ${activeRange.months} months`}
+        />
+      </div>
       <div className="grid md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4 space-y-2">
