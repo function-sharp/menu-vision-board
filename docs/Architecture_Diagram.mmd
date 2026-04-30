@@ -1,0 +1,56 @@
+graph TB
+    subgraph Client["Browser - React 18 + Vite"]
+        UI[Dashboard UI<br/>shadcn/ui + Tailwind]
+        RQ[TanStack Query<br/>Cache + Mutations]
+        PDF[pdfReport.ts<br/>jsPDF + html2canvas]
+        XLSX[xlsx parser<br/>client-side]
+        KPI[reviewKpis.ts<br/>shared math]
+        UI --> RQ
+        UI --> PDF
+        UI --> XLSX
+        PDF --> KPI
+    end
+
+    subgraph Cloud["Lovable Cloud - Supabase"]
+        Auth[Supabase Auth<br/>email/password]
+        DB[(Postgres<br/>+ RLS + Triggers)]
+        EF[Edge Functions - Deno]
+    end
+
+    subgraph Functions["Edge Functions"]
+        SGR[sync-google-reviews]
+        SUE[scrape-uber-eats]
+        SAT[sync-airtable]
+        AR[analyze-reviews]
+        ME[merge-excel]
+    end
+
+    subgraph External["External APIs"]
+        Apify[Apify<br/>Google Maps dataset]
+        FC[Firecrawl<br/>Uber Eats scraping]
+        AT[Airtable<br/>Promotion Tracker]
+        AIG[Lovable AI Gateway<br/>Gemini 2.5 Flash]
+    end
+
+    RQ -->|supabase-js| Auth
+    RQ -->|select / insert| DB
+    RQ -->|invoke| EF
+    XLSX -->|parsed rows| ME
+
+    EF --> SGR
+    EF --> SUE
+    EF --> SAT
+    EF --> AR
+    EF --> ME
+
+    SGR -->|fetch reviews| Apify
+    SGR -->|upsert places + reviews| DB
+    SUE -->|search / scrape| FC
+    SUE -->|update stores + items| DB
+    SAT <-->|pull / push| AT
+    SAT -->|upsert promotions| DB
+    AR -->|prompt + tool call| AIG
+    AR -->|cache insights| DB
+    ME -->|NULL-only merge| DB
+
+    DB -.triggers.-> DB
