@@ -12,6 +12,7 @@ import { ReviewCard } from "@/components/ReviewCard";
 import { Stars, StarDistribution } from "@/components/StarDistribution";
 import { Search, Star, MessageSquare, ReplyAll, CalendarClock, Download } from "lucide-react";
 import { toast } from "sonner";
+import { useScopedStoreIds, type ReviewScope, defaultScope } from "./ReviewFiltersBar";
 
 function csvEscape(v: unknown): string {
   if (v == null) return "";
@@ -19,11 +20,12 @@ function csvEscape(v: unknown): string {
   return /[",\n]/.test(s) ? `"${s}"` : s;
 }
 
-export function ReviewsListTab({ initialStoreId }: { initialStoreId?: string | null } = {}) {
+export function ReviewsListTab({ initialStoreId, scope = defaultScope }: { initialStoreId?: string | null; scope?: ReviewScope } = {}) {
   const { data: stores } = useStores();
   const { data: places } = useGooglePlaces();
   const [searchParams, setSearchParams] = useSearchParams();
   const focusReviewId = searchParams.get("focus");
+  const { storeId: scopedStoreId, storeIds: scopedStoreIds } = useScopedStoreIds(scope);
 
   const [storeId, setStoreId] = useState<string | "all">(initialStoreId ?? "all");
   const [stars, setStars] = useState<string>("all");
@@ -32,8 +34,13 @@ export function ReviewsListTab({ initialStoreId }: { initialStoreId?: string | n
   const [sortBy, setSortBy] = useState<NonNullable<ReviewFilters["sortBy"]>>("newest");
   const [pageSize, setPageSize] = useState<number>(100);
 
+  // Local "store" select narrows further inside the page-level scope.
+  const effectiveStoreId = storeId !== "all" ? storeId : (scopedStoreId ?? null);
+  const effectiveStoreIds = effectiveStoreId ? null : (scopedStoreIds ?? null);
+
   const filters: ReviewFilters = {
-    storeId: storeId === "all" ? null : storeId,
+    storeId: effectiveStoreId,
+    storeIds: effectiveStoreIds,
     stars: stars === "all" ? null : Number(stars),
     hasResponse: responseFilter === "with" ? true : false,
     search,
@@ -41,7 +48,7 @@ export function ReviewsListTab({ initialStoreId }: { initialStoreId?: string | n
     limit: pageSize,
   };
   const { data: reviews, isLoading } = useReviews(filters);
-  const { data: stats } = useReviewStats(filters.storeId);
+  const { data: stats } = useReviewStats(effectiveStoreId, effectiveStoreIds);
 
   const storeName = useMemo(() => {
     const map = new Map<string, string>();
