@@ -447,5 +447,15 @@ function FilterSummary({ filters, stores }: { filters: Filters; stores: any[] })
   }
   if (filters.categoryFilter !== "all") parts.push(`category: ${decodeText(filters.categoryFilter)}`);
   if (filters.groupFilter !== "all") parts.push(`group: ${filters.groupFilter}`);
+  if (filters.linkFilter !== "all") {
+    const labels: Record<LinkFilter, string> = {
+      all: "",
+      item: "item link only",
+      store: "store link only",
+      item_or_store: "has item or store link",
+      none: "no link",
+    };
+    parts.push(`link: ${labels[filters.linkFilter]}`);
+  }
   return <span>{parts.length === 0 ? "No filters" : parts.join(" · ")}</span>;
 }
