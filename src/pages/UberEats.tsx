@@ -16,7 +16,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { formatZAR, decodeText } from "@/lib/format";
 import { ExternalLink, Copy, Search, Download, Link2, AlertTriangle, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X, Loader2, Info } from "lucide-react";
 import { toast } from "sonner";
-import { BulkScrapePanel } from "@/components/BulkScrapePanel";
+import { SyncCenter } from "@/components/BulkScrapePanel";
 import { StoreScrapeActions, ItemScrapeActions } from "@/components/ScrapeRowActions";
 
 function isValidUrl(value: string): boolean {
@@ -76,7 +76,10 @@ export default function UberEats() {
 
   const updateStoreUrl = useMutation({
     mutationFn: async ({ id, url }: { id: string; url: string | null }) => {
-      const { error } = await supabase.from("stores").update({ uber_eats_url: url }).eq("id", id);
+      const { error } = await supabase
+        .from("stores")
+        .update({ uber_eats_url: url, manually_edited_at: new Date().toISOString() })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -89,7 +92,10 @@ export default function UberEats() {
 
   const updateItemDeepLink = useMutation({
     mutationFn: async ({ id, url }: { id: string; url: string | null }) => {
-      const { error } = await supabase.from("menu_items").update({ deep_link: url }).eq("id", id);
+      const { error } = await supabase
+        .from("menu_items")
+        .update({ deep_link: url, manually_edited_at: new Date().toISOString() })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -264,7 +270,7 @@ export default function UberEats() {
         </span>
       </div>
 
-      <BulkScrapePanel stores={stores ?? []} items={items ?? []} />
+      <SyncCenter stores={stores ?? []} items={items ?? []} />
 
       {/* Stores section */}
       <Card>

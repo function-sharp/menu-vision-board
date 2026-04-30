@@ -3,7 +3,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Search, RefreshCw, LinkIcon, ShieldCheck, X, History } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Search,
+  RefreshCw,
+  LinkIcon,
+  ShieldCheck,
+  X,
+  History,
+  Download,
+  Upload as UploadIcon,
+  Database,
+  Loader2,
+} from "lucide-react";
 import { runScrape, ScrapeAction } from "@/hooks/useScrape";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +28,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { formatDistanceToNow } from "date-fns";
+import { Link } from "react-router-dom";
 
 type Store = { id: string; uber_eats_url: string | null };
 type Item = { id: string; store_id: string; deep_link: string | null; stores: { uber_eats_url: string | null } };
@@ -33,7 +46,44 @@ type BulkJob = {
   running: boolean;
 };
 
-export function BulkScrapePanel({ stores, items }: Props) {
+export function SyncCenter({ stores, items }: Props) {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
+        <div>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Database className="h-4 w-4" /> Sync Center
+          </CardTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            Supabase is the source of truth. Pulls only fill blanks; pushes overwrite Airtable.
+          </p>
+        </div>
+        <SyncLogSheet />
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="scrape">
+          <TabsList>
+            <TabsTrigger value="scrape">Scrape</TabsTrigger>
+            <TabsTrigger value="airtable">Airtable</TabsTrigger>
+            <TabsTrigger value="excel">Excel</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="scrape" className="space-y-3 pt-3">
+            <ScrapeTab stores={stores} items={items} />
+          </TabsContent>
+          <TabsContent value="airtable" className="space-y-3 pt-3">
+            <AirtableTab />
+          </TabsContent>
+          <TabsContent value="excel" className="pt-3">
+            <ExcelTab />
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ScrapeTab({ stores, items }: Props) {
   const qc = useQueryClient();
   const [job, setJob] = useState<BulkJob | null>(null);
   const cancelRef = useRef(false);
@@ -61,6 +111,7 @@ export function BulkScrapePanel({ stores, items }: Props) {
     qc.invalidateQueries({ queryKey: ["stores"] });
     qc.invalidateQueries({ queryKey: ["all-items"] });
     qc.invalidateQueries({ queryKey: ["scrape-jobs"] });
+    qc.invalidateQueries({ queryKey: ["sync-runs"] });
     toast.success(`${label}: ${done - failed} succeeded, ${failed} failed`);
   };
 
@@ -73,7 +124,6 @@ export function BulkScrapePanel({ stores, items }: Props) {
   };
 
   const scrapeMissingItemLinks = () => {
-    // group items missing deep_link by store (one scrape per store)
     const storeIds = new Set<string>();
     for (const i of items) {
       if (!i.deep_link && i.stores.uber_eats_url) storeIds.add(i.store_id);
@@ -105,115 +155,268 @@ export function BulkScrapePanel({ stores, items }: Props) {
   const pct = job && job.total > 0 ? Math.round((job.done / job.total) * 100) : 0;
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
-        <div>
-          <CardTitle className="text-base">Bulk scrape (Firecrawl)</CardTitle>
-          <p className="text-xs text-muted-foreground mt-1">
-            Find missing URLs, refresh metadata and validate links across all stores.
-          </p>
-        </div>
-        <JobLogSheet />
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" onClick={findMissingStoreUrls} disabled={job?.running}>
-            <Search className="h-4 w-4 mr-2" /> Find missing store URLs
-          </Button>
-          <Button size="sm" variant="outline" onClick={scrapeMissingItemLinks} disabled={job?.running}>
-            <LinkIcon className="h-4 w-4 mr-2" /> Scrape missing item deep links
-          </Button>
-          <Button size="sm" variant="outline" onClick={refreshAllMetadata} disabled={job?.running}>
-            <RefreshCw className="h-4 w-4 mr-2" /> Refresh all metadata
-          </Button>
-          <Button size="sm" variant="outline" onClick={validateAllUrls} disabled={job?.running}>
-            <ShieldCheck className="h-4 w-4 mr-2" /> Validate all URLs
-          </Button>
-        </div>
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" variant="outline" onClick={findMissingStoreUrls} disabled={job?.running}>
+          <Search className="h-4 w-4 mr-2" /> Find missing store URLs
+        </Button>
+        <Button size="sm" variant="outline" onClick={scrapeMissingItemLinks} disabled={job?.running}>
+          <LinkIcon className="h-4 w-4 mr-2" /> Scrape missing item deep links
+        </Button>
+        <Button size="sm" variant="outline" onClick={refreshAllMetadata} disabled={job?.running}>
+          <RefreshCw className="h-4 w-4 mr-2" /> Refresh all metadata
+        </Button>
+        <Button size="sm" variant="outline" onClick={validateAllUrls} disabled={job?.running}>
+          <ShieldCheck className="h-4 w-4 mr-2" /> Validate all URLs
+        </Button>
+      </div>
 
-        {job && (
-          <div className="rounded-md border p-3 space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-medium">{job.label}</span>
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground text-xs">
-                  {job.done} / {job.total} {job.failed > 0 && `(${job.failed} failed)`}
-                </span>
-                {job.running && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7"
-                    onClick={() => {
-                      cancelRef.current = true;
-                    }}
-                  >
-                    <X className="h-3.5 w-3.5 mr-1" /> Cancel
-                  </Button>
-                )}
-              </div>
+      {job && (
+        <div className="rounded-md border p-3 space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium">{job.label}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground text-xs">
+                {job.done} / {job.total} {job.failed > 0 && `(${job.failed} failed)`}
+              </span>
+              {job.running && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7"
+                  onClick={() => {
+                    cancelRef.current = true;
+                  }}
+                >
+                  <X className="h-3.5 w-3.5 mr-1" /> Cancel
+                </Button>
+              )}
             </div>
-            <Progress value={pct} />
           </div>
-        )}
-      </CardContent>
-    </Card>
+          <Progress value={pct} />
+        </div>
+      )}
+    </div>
   );
 }
 
-function JobLogSheet() {
-  const { data: jobs } = useQuery({
+function AirtableTab() {
+  const qc = useQueryClient();
+  const [pulling, setPulling] = useState(false);
+  const [pushing, setPushing] = useState(false);
+  const [lastResult, setLastResult] = useState<{ kind: "pull" | "push"; data: any } | null>(null);
+
+  const { data: lastRuns } = useQuery({
+    queryKey: ["sync-runs", "airtable-latest"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("sync_runs")
+        .select("*")
+        .eq("source", "airtable")
+        .order("started_at", { ascending: false })
+        .limit(2);
+      return data ?? [];
+    },
+  });
+
+  const lastPull = lastRuns?.find((r: any) => r.direction === "pull");
+  const lastPush = lastRuns?.find((r: any) => r.direction === "push");
+
+  const handlePull = async () => {
+    setPulling(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("sync-airtable", { body: { direction: "pull" } });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error ?? "Pull failed");
+      setLastResult({ kind: "pull", data });
+      toast.success(`Pull: ${data.stores_filled} filled, ${data.stores_skipped_supabase_wins} kept`);
+      qc.invalidateQueries();
+    } catch (e: any) {
+      toast.error(`Pull failed: ${e.message}`);
+    } finally {
+      setPulling(false);
+    }
+  };
+
+  const handlePush = async () => {
+    setPushing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("sync-airtable", { body: { direction: "push" } });
+      if (error) throw error;
+      setLastResult({ kind: "push", data });
+      if (data?.ok) {
+        toast.success(`Push: ${data.stores_pushed} updated in Airtable`);
+      } else {
+        toast.warning(data?.error ?? "Push completed with errors");
+      }
+      qc.invalidateQueries();
+    } catch (e: any) {
+      toast.error(`Push failed: ${e.message}`);
+    } finally {
+      setPushing(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" variant="outline" onClick={handlePull} disabled={pulling || pushing}>
+          {pulling ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+          Pull from Airtable
+        </Button>
+        <Button size="sm" variant="outline" onClick={handlePush} disabled={pulling || pushing}>
+          {pushing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <UploadIcon className="h-4 w-4 mr-2" />}
+          Push to Airtable
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+        <RunSummary label="Last pull" run={lastPull} />
+        <RunSummary label="Last push" run={lastPush} />
+      </div>
+
+      {lastResult && (
+        <div className="rounded-md border bg-muted/30 p-3 text-xs space-y-1">
+          <div className="font-medium capitalize">{lastResult.kind} result</div>
+          {lastResult.kind === "pull" ? (
+            <ul className="text-muted-foreground space-y-0.5">
+              <li>{lastResult.data.stores_filled} stores filled (were blank)</li>
+              <li>{lastResult.data.stores_skipped_supabase_wins} kept (Supabase had a value)</li>
+              <li>{lastResult.data.stores_unmatched?.length ?? 0} stores in Airtable not matched in Supabase</li>
+              <li>{lastResult.data.promotions_upserted} promotions saved · {lastResult.data.promotions_removed} removed</li>
+            </ul>
+          ) : (
+            <ul className="text-muted-foreground space-y-0.5">
+              <li>{lastResult.data.stores_pushed} stores updated in Airtable</li>
+              <li>{lastResult.data.stores_unchanged} unchanged</li>
+              <li>{lastResult.data.stores_not_found_in_airtable?.length ?? 0} not found in Airtable</li>
+              {lastResult.data.push_errors?.length > 0 && (
+                <li className="text-destructive">
+                  {lastResult.data.push_errors.length} write errors — likely the URL field is a lookup. First: {lastResult.data.push_errors[0]?.error?.slice(0, 200)}
+                </li>
+              )}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RunSummary({ label, run }: { label: string; run: any }) {
+  if (!run) {
+    return (
+      <div className="rounded-md border p-2">
+        <div className="text-muted-foreground">{label}</div>
+        <div className="font-medium">Never</div>
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-md border p-2">
+      <div className="text-muted-foreground flex items-center gap-2">
+        {label}
+        <Badge variant={run.status === "success" ? "default" : "destructive"} className="text-[10px]">
+          {run.status}
+        </Badge>
+      </div>
+      <div className="font-medium">{formatDistanceToNow(new Date(run.started_at), { addSuffix: true })}</div>
+    </div>
+  );
+}
+
+function ExcelTab() {
+  return (
+    <div className="text-sm space-y-2">
+      <p className="text-muted-foreground">
+        Excel uploads now <strong>merge</strong> with Supabase — existing values are kept, blanks get filled.
+      </p>
+      <Button asChild size="sm" variant="outline">
+        <Link to="/upload">
+          <UploadIcon className="h-4 w-4 mr-2" /> Open uploader
+        </Link>
+      </Button>
+    </div>
+  );
+}
+
+function SyncLogSheet() {
+  const { data: scrapeJobs } = useQuery({
     queryKey: ["scrape-jobs"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("scrape_jobs")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(50);
-      if (error) throw error;
+        .limit(30);
       return data ?? [];
     },
     refetchInterval: 5000,
   });
 
+  const { data: syncRuns } = useQuery({
+    queryKey: ["sync-runs"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("sync_runs")
+        .select("*")
+        .order("started_at", { ascending: false })
+        .limit(30);
+      return data ?? [];
+    },
+    refetchInterval: 5000,
+  });
+
+  // merge + sort
+  const merged = [
+    ...(syncRuns ?? []).map((r: any) => ({ kind: "sync", at: r.started_at, row: r })),
+    ...(scrapeJobs ?? []).map((j: any) => ({ kind: "scrape", at: j.created_at, row: j })),
+  ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+
   return (
     <Sheet>
       <SheetTrigger asChild>
         <Button size="sm" variant="ghost">
-          <History className="h-4 w-4 mr-2" /> Job log
+          <History className="h-4 w-4 mr-2" /> Sync log
         </Button>
       </SheetTrigger>
       <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>Recent scrape jobs</SheetTitle>
+          <SheetTitle>Recent sync activity</SheetTitle>
         </SheetHeader>
         <div className="mt-4 space-y-2">
-          {(!jobs || jobs.length === 0) && (
-            <div className="text-sm text-muted-foreground">No jobs yet.</div>
-          )}
-          {jobs?.map((j: any) => (
-            <div key={j.id} className="rounded-md border p-3 text-xs space-y-1">
+          {merged.length === 0 && <div className="text-sm text-muted-foreground">No activity yet.</div>}
+          {merged.map(({ kind, row }) => (
+            <div key={`${kind}-${row.id}`} className="rounded-md border p-3 text-xs space-y-1">
               <div className="flex items-center justify-between">
-                <span className="font-medium">{j.action}</span>
+                <span className="font-medium">
+                  {kind === "scrape" ? row.action : `${row.direction} · ${row.source}`}
+                </span>
                 <Badge
                   variant={
-                    j.status === "success"
+                    row.status === "success"
                       ? "default"
-                      : j.status === "error"
+                      : row.status === "error"
                       ? "destructive"
                       : "secondary"
                   }
                 >
-                  {j.status}
+                  {row.status}
                 </Badge>
               </div>
               <div className="text-muted-foreground">
-                {j.target_type} · {j.provider} · {formatDistanceToNow(new Date(j.created_at), { addSuffix: true })}
+                {kind === "scrape"
+                  ? `${row.target_type} · ${row.provider}`
+                  : "manual sync"}
+                {" · "}
+                {formatDistanceToNow(new Date(kind === "scrape" ? row.created_at : row.started_at), {
+                  addSuffix: true,
+                })}
               </div>
-              {j.error && <div className="text-destructive">{j.error}</div>}
-              {j.result && (
+              {row.error && <div className="text-destructive">{row.error}</div>}
+              {(row.result || row.summary) && (
                 <pre className="bg-muted p-1.5 rounded text-[10px] overflow-x-auto">
-                  {JSON.stringify(j.result, null, 2)}
+                  {JSON.stringify(row.result ?? row.summary, null, 2)}
                 </pre>
               )}
             </div>
