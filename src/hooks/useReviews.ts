@@ -49,6 +49,8 @@ export interface ReviewFilters {
   search?: string;
   sortBy?: "newest" | "oldest" | "highest" | "lowest" | "likes";
   limit?: number;
+  since?: string | null; // ISO date — published_at >= since
+  until?: string | null; // ISO date — published_at < until
 }
 
 export const useGooglePlaces = () =>
@@ -74,6 +76,8 @@ export const useReviews = (filters: ReviewFilters = {}) =>
       if (filters.stars) q = q.eq("stars", filters.stars);
       if (filters.hasText) q = q.not("text", "is", null);
       if (filters.hasResponse) q = q.not("response_text", "is", null);
+      if (filters.since) q = q.gte("published_at", filters.since);
+      if (filters.until) q = q.lt("published_at", filters.until);
       if (filters.search && filters.search.trim()) {
         const s = filters.search.trim().replace(/[%_]/g, "");
         q = q.or(`text.ilike.%${s}%,reviewer_name.ilike.%${s}%,response_text.ilike.%${s}%`);

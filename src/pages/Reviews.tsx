@@ -15,7 +15,10 @@ export default function Reviews() {
   const { data: places } = useGooglePlaces();
   const sync = useSyncReviews();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [scope, setScope] = useState<ReviewScope>(defaultScope);
+  const storeParam = searchParams.get("store");
+  const [scope, setScope] = useState<ReviewScope>(
+    storeParam ? { ...defaultScope, storeId: storeParam } : defaultScope,
+  );
 
   // Auto-jump to "list" tab when a focus param is present (from Global Search)
   const initialTab = searchParams.get("tab") ?? (searchParams.get("focus") ? "list" : "overview");

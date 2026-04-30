@@ -38,6 +38,9 @@ export function ReviewsListTab({ initialStoreId, scope = defaultScope }: { initi
   const effectiveStoreId = storeId !== "all" ? storeId : (scopedStoreId ?? null);
   const effectiveStoreIds = effectiveStoreId ? null : (scopedStoreIds ?? null);
 
+  const sinceParam = searchParams.get("since");
+  const untilParam = searchParams.get("until");
+
   const filters: ReviewFilters = {
     storeId: effectiveStoreId,
     storeIds: effectiveStoreIds,
@@ -46,6 +49,8 @@ export function ReviewsListTab({ initialStoreId, scope = defaultScope }: { initi
     search,
     sortBy,
     limit: pageSize,
+    since: sinceParam,
+    until: untilParam,
   };
   const { data: reviews, isLoading } = useReviews(filters);
   const { data: stats } = useReviewStats(effectiveStoreId, effectiveStoreIds);
@@ -149,6 +154,31 @@ export function ReviewsListTab({ initialStoreId, scope = defaultScope }: { initi
           </CardContent>
         </Card>
       </div>
+
+      {(sinceParam || untilParam) && (
+        <div className="flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs">
+          <CalendarClock className="h-3.5 w-3.5 text-primary" />
+          <span className="text-muted-foreground">Date range:</span>
+          <span className="font-medium">
+            {sinceParam ? new Date(sinceParam).toLocaleDateString() : "…"}
+            {" – "}
+            {untilParam ? new Date(untilParam).toLocaleDateString() : "now"}
+          </span>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-6 px-2 ml-auto text-xs"
+            onClick={() => {
+              const next = new URLSearchParams(searchParams);
+              next.delete("since");
+              next.delete("until");
+              setSearchParams(next, { replace: true });
+            }}
+          >
+            Clear
+          </Button>
+        </div>
+      )}
 
       {/* Filters */}
       <Card>
