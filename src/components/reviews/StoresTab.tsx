@@ -38,6 +38,19 @@ export function StoresTab({ scope = defaultScope }: { scope?: ReviewScope }) {
   const [cityFilter, setCityFilter] = useState<string>("all");
   const [sortKey, setSortKey] = useState<SortKey>("reviews");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [compareRange, setCompareRange] = useState<string>("24m");
+
+  const toggleSelect = (storeId: string) => {
+    setSelectedIds((prev) => {
+      if (prev.includes(storeId)) return prev.filter((id) => id !== storeId);
+      if (prev.length >= MAX_COMPARE) {
+        toast.info(`You can compare up to ${MAX_COMPARE} stores at once`);
+        return prev;
+      }
+      return [...prev, storeId];
+    });
+  };
 
   const groups = useMemo(
     () => Array.from(new Set((stores ?? []).map((s) => s.store_group).filter(Boolean))) as string[],
