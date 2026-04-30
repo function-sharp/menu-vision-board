@@ -130,13 +130,21 @@ export default function MenuBrowser() {
       if (filters.storeFilter !== "all" && i.stores.slug !== filters.storeFilter) return false;
       if (filters.categoryFilter !== "all" && i.category !== filters.categoryFilter) return false;
       if (filters.groupFilter !== "all" && i.stores.store_group !== filters.groupFilter) return false;
+      if (filters.linkFilter !== "all") {
+        const hasItem = !!i.deep_link;
+        const hasStore = !!i.stores.uber_eats_url;
+        if (filters.linkFilter === "item" && !hasItem) return false;
+        if (filters.linkFilter === "store" && !(hasStore && !hasItem)) return false;
+        if (filters.linkFilter === "item_or_store" && !(hasItem || hasStore)) return false;
+        if (filters.linkFilter === "none" && (hasItem || hasStore)) return false;
+      }
       return true;
     });
   }, [items, filters]);
 
   const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const hasFilters = filters.q !== "" || filters.storeFilter !== "all" || filters.categoryFilter !== "all" || filters.groupFilter !== "all";
+  const hasFilters = filters.q !== "" || filters.storeFilter !== "all" || filters.categoryFilter !== "all" || filters.groupFilter !== "all" || filters.linkFilter !== "all";
 
   const exportCsv = () => {
     const headers = ["Store", "Group", "Category", "Item", "Description", "Price (ZAR)", "Uber Eats URL"];
