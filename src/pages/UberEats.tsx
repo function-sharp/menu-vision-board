@@ -75,12 +75,19 @@ export default function UberEats() {
   const queryClient = useQueryClient();
 
   const updateStoreUrl = useMutation({
-    mutationFn: async ({ id, url }: { id: string; url: string | null }) => {
+    mutationFn: async ({ id, url, name }: { id: string; url: string | null; name?: string }) => {
       const { error } = await supabase
         .from("stores")
         .update({ uber_eats_url: url, manually_edited_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
+      void logActivity({
+        action: url ? "store.uber_eats_url.set" : "store.uber_eats_url.cleared",
+        entity_type: "store",
+        entity_id: id,
+        entity_label: name ?? null,
+        details: { url },
+      });
     },
     onSuccess: () => {
       toast.success("Store link updated");
@@ -91,12 +98,19 @@ export default function UberEats() {
   });
 
   const updateItemDeepLink = useMutation({
-    mutationFn: async ({ id, url }: { id: string; url: string | null }) => {
+    mutationFn: async ({ id, url, name }: { id: string; url: string | null; name?: string }) => {
       const { error } = await supabase
         .from("menu_items")
         .update({ deep_link: url, manually_edited_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
+      void logActivity({
+        action: url ? "menu_item.deep_link.set" : "menu_item.deep_link.cleared",
+        entity_type: "menu_item",
+        entity_id: id,
+        entity_label: name ?? null,
+        details: { url },
+      });
     },
     onSuccess: () => {
       toast.success("Item link updated");
