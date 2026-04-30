@@ -519,7 +519,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      match_store_for_place_title: {
+        Args: { p_title: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
