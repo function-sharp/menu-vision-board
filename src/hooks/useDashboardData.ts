@@ -62,14 +62,14 @@ export const useAllItems = () =>
       for (let from = 0; ; from += pageSize) {
         const { data, error } = await supabase
           .from("menu_items")
-          .select("id, store_id, category, name, description, price, currency, stores!inner(name, slug, store_group)")
+          .select("id, store_id, category, name, description, price, currency, deep_link, stores!inner(name, slug, store_group, uber_eats_url)")
           .range(from, from + pageSize - 1);
         if (error) throw error;
         if (!data || data.length === 0) break;
         all.push(...data);
         if (data.length < pageSize) break;
       }
-      return all as Array<MenuItem & { stores: { name: string; slug: string; store_group: string | null } }>;
+      return all as Array<MenuItem & { stores: { name: string; slug: string; store_group: string | null; uber_eats_url: string | null } }>;
     },
   });
 
