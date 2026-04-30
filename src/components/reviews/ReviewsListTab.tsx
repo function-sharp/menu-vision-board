@@ -38,6 +38,9 @@ export function ReviewsListTab({ initialStoreId, scope = defaultScope }: { initi
   const effectiveStoreId = storeId !== "all" ? storeId : (scopedStoreId ?? null);
   const effectiveStoreIds = effectiveStoreId ? null : (scopedStoreIds ?? null);
 
+  const sinceParam = searchParams.get("since");
+  const untilParam = searchParams.get("until");
+
   const filters: ReviewFilters = {
     storeId: effectiveStoreId,
     storeIds: effectiveStoreIds,
@@ -46,6 +49,8 @@ export function ReviewsListTab({ initialStoreId, scope = defaultScope }: { initi
     search,
     sortBy,
     limit: pageSize,
+    since: sinceParam,
+    until: untilParam,
   };
   const { data: reviews, isLoading } = useReviews(filters);
   const { data: stats } = useReviewStats(effectiveStoreId, effectiveStoreIds);
