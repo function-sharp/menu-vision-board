@@ -341,6 +341,8 @@ function ExcelTab() {
 }
 
 function SyncLogSheet() {
+  const [open, setOpen] = useState(false);
+
   const { data: scrapeJobs } = useQuery({
     queryKey: ["scrape-jobs"],
     queryFn: async () => {
@@ -351,7 +353,8 @@ function SyncLogSheet() {
         .limit(30);
       return data ?? [];
     },
-    refetchInterval: 5000,
+    enabled: open,
+    refetchInterval: open ? 5000 : false,
   });
 
   const { data: syncRuns } = useQuery({
@@ -364,7 +367,8 @@ function SyncLogSheet() {
         .limit(30);
       return data ?? [];
     },
-    refetchInterval: 5000,
+    enabled: open,
+    refetchInterval: open ? 5000 : false,
   });
 
   // merge + sort
