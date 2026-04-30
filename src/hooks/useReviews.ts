@@ -42,6 +42,7 @@ export type GooglePlace = {
 
 export interface ReviewFilters {
   storeId?: string | null;
+  storeIds?: string[] | null; // restrict to a set of stores (e.g. by group/city)
   stars?: number | null; // exact star value
   hasText?: boolean;
   hasResponse?: boolean;
