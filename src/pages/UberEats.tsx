@@ -16,7 +16,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { formatZAR, decodeText } from "@/lib/format";
 import { ExternalLink, Copy, Search, Download, Link2, AlertTriangle, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X, Loader2, Info } from "lucide-react";
 import { toast } from "sonner";
-import { BulkScrapePanel } from "@/components/BulkScrapePanel";
+import { SyncCenter } from "@/components/BulkScrapePanel";
 import { StoreScrapeActions, ItemScrapeActions } from "@/components/ScrapeRowActions";
 
 function isValidUrl(value: string): boolean {
