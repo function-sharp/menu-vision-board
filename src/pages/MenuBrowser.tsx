@@ -45,6 +45,7 @@ export default function MenuBrowser() {
   const [saveOpen, setSaveOpen] = useState(false);
   const [presetName, setPresetName] = useState("");
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
+  const [selectedItem, setSelectedItem] = useState<any | null>(null);
 
   const updateFilter = (patch: Partial<Filters>) => {
     setFilters((f) => ({ ...f, ...patch }));
@@ -291,15 +292,21 @@ export default function MenuBrowser() {
                     const url = i.deep_link ?? i.stores.uber_eats_url ?? null;
                     const isItemLink = !!i.deep_link;
                     return (
-                      <TableRow key={i.id}>
+                      <TableRow
+                        key={i.id}
+                        onClick={() => setSelectedItem(i)}
+                        className="cursor-pointer hover:bg-muted/50"
+                      >
                         <TableCell className="max-w-xs">
                           <div className="font-medium">{decodeText(i.name)}</div>
                           {i.description && <div className="text-xs text-muted-foreground line-clamp-1">{decodeText(i.description)}</div>}
                         </TableCell>
-                        <TableCell><Link className="hover:text-primary hover:underline" to={`/stores/${i.stores.slug}`}>{i.stores.name}</Link></TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Link className="hover:text-primary hover:underline" to={`/stores/${i.stores.slug}`}>{i.stores.name}</Link>
+                        </TableCell>
                         <TableCell className="text-xs text-muted-foreground">{decodeText(i.category ?? "")}</TableCell>
                         <TableCell className="text-right font-semibold whitespace-nowrap">{formatZAR(Number(i.price))}</TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                           {url ? (
                             <a
                               href={url}
@@ -334,6 +341,77 @@ export default function MenuBrowser() {
           </div>
         </div>
       )}
+
+      <Dialog open={!!selectedItem} onOpenChange={(o) => !o && setSelectedItem(null)}>
+        <DialogContent className="max-w-lg">
+          {selectedItem && (() => {
+            const url = selectedItem.deep_link ?? selectedItem.stores.uber_eats_url ?? null;
+            const isItemLink = !!selectedItem.deep_link;
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="pr-6">{decodeText(selectedItem.name)}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="flex flex-wrap gap-2">
+                    {selectedItem.category && <Badge variant="outline">{decodeText(selectedItem.category)}</Badge>}
+                    {selectedItem.stores.store_group && <Badge variant="outline">{selectedItem.stores.store_group}</Badge>}
+                    {selectedItem.price != null && (
+                      <Badge className="bg-primary text-primary-foreground">{formatZAR(Number(selectedItem.price))}</Badge>
+                    )}
+                  </div>
+
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">Available at </span>
+                    <Link
+                      to={`/stores/${selectedItem.stores.slug}`}
+                      onClick={() => setSelectedItem(null)}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      {selectedItem.stores.name}
+                    </Link>
+                  </div>
+
+                  {selectedItem.description && (
+                    <div className="text-sm text-muted-foreground whitespace-pre-line border-l-2 border-muted pl-3">
+                      {decodeText(selectedItem.description)}
+                    </div>
+                  )}
+
+                  <div className="rounded-md border bg-muted/30 p-3 space-y-2">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Uber Eats link</div>
+                    {url ? (
+                      <>
+                        <div className="text-xs">
+                          <Badge variant={isItemLink ? "default" : "secondary"} className="mr-2">
+                            {isItemLink ? "Item-level" : "Store-level"}
+                          </Badge>
+                          <span className="text-muted-foreground">
+                            {isItemLink ? "Opens this exact item on Uber Eats." : "Item link unavailable — opens the store page on Uber Eats."}
+                          </span>
+                        </div>
+                        <div className="text-xs font-mono break-all text-muted-foreground">{url}</div>
+                      </>
+                    ) : (
+                      <div className="text-xs text-muted-foreground">No Uber Eats link available for this item or store.</div>
+                    )}
+                  </div>
+                </div>
+                <DialogFooter className="gap-2">
+                  <Button variant="outline" onClick={() => setSelectedItem(null)}>Close</Button>
+                  {url && (
+                    <Button asChild>
+                      <a href={url} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-4 w-4 mr-2" /> Open on Uber Eats
+                      </a>
+                    </Button>
+                  )}
+                </DialogFooter>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
