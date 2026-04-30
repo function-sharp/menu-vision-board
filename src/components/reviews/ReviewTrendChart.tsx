@@ -13,8 +13,8 @@ import {
   Legend,
 } from "recharts";
 
-export function ReviewTrendChart({ storeId, months = 24, title = "Review trend" }: { storeId?: string | null; months?: number; title?: string }) {
-  const { data, isLoading } = useReviewTrend(storeId ?? null, months);
+export function ReviewTrendChart({ storeId, months = 24, title = "Review trend", storeIds }: { storeId?: string | null; months?: number; title?: string; storeIds?: string[] | null }) {
+  const { data, isLoading } = useReviewTrend(storeId ?? null, months, storeIds ?? null);
 
   return (
     <Card>

@@ -8,11 +8,24 @@ import { ResponsePerformance } from "./ResponsePerformance";
 import { StoreLeaderboard } from "./StoreLeaderboard";
 import { MessageSquare, Star, ReplyAll, CalendarClock, Users, Clock } from "lucide-react";
 import { useResponsePerformance, useStoreReviewStats } from "@/hooks/useReviews";
+import { useScopedStoreIds, type ReviewScope, defaultScope } from "./ReviewFiltersBar";
 
-export function OverviewTab() {
-  const { data: stats } = useReviewStats(null);
-  const { data: respPerf } = useResponsePerformance(null);
-  const { data: storeStats } = useStoreReviewStats();
+export function OverviewTab({ scope = defaultScope }: { scope?: ReviewScope }) {
+  const { storeId, storeIds } = useScopedStoreIds(scope);
+  const { data: stats } = useReviewStats(storeId, storeIds);
+  const { data: respPerf } = useResponsePerformance(storeId, storeIds);
+  const { data: allStoreStats } = useStoreReviewStats();
+
+  // Restrict store stats to scope as well so KPIs match
+  const storeStats = useMemo(() => {
+    if (!allStoreStats) return undefined;
+    if (storeId) return allStoreStats.filter((s) => s.store_id === storeId);
+    if (storeIds && storeIds.length > 0) {
+      const set = new Set(storeIds);
+      return allStoreStats.filter((s) => set.has(s.store_id));
+    }
+    return allStoreStats;
+  }, [allStoreStats, storeId, storeIds]);
 
   const aggregate = useMemo(() => {
     if (!storeStats) return null;
@@ -23,11 +36,7 @@ export function OverviewTab() {
       if (!arr.length) return null;
       return arr.reduce((a, b) => a + b, 0) / arr.length;
     })();
-    return {
-      totalReplied,
-      totalAll,
-      avgReplyDays,
-    };
+    return { totalReplied, totalAll, avgReplyDays };
   }, [respPerf, storeStats]);
 
   return (
@@ -48,13 +57,13 @@ export function OverviewTab() {
           value={aggregate?.avgReplyDays != null ? `${aggregate.avgReplyDays.toFixed(1)}d` : "—"}
         />
         <Kpi icon={<CalendarClock className="h-4 w-4" />} label="Last 30 days" value={stats?.last30.toLocaleString() ?? "—"} />
-        <Kpi icon={<Users className="h-4 w-4" />} label="Linked stores" value={(storeStats?.length ?? 0).toLocaleString()} />
+        <Kpi icon={<Users className="h-4 w-4" />} label="Stores in scope" value={(storeStats?.length ?? 0).toLocaleString()} />
       </div>
 
-      <ReviewTrendChart storeId={null} months={24} title="Review volume & rating — last 24 months" />
+      <ReviewTrendChart storeId={storeId} storeIds={storeIds} months={24} title="Review volume & rating — last 24 months" />
 
       <div className="grid lg:grid-cols-2 gap-4">
-        <ResponsePerformance storeId={null} />
+        <ResponsePerformance storeId={storeId} storeIds={storeIds} />
         <Card>
           <CardContent className="p-4 space-y-3">
             <div className="text-sm font-medium">Detailed averages</div>
@@ -75,8 +84,8 @@ export function OverviewTab() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-4">
-        <StoreLeaderboard mode="top" />
-        <StoreLeaderboard mode="bottom" />
+        <StoreLeaderboard mode="top" scope={scope} />
+        <StoreLeaderboard mode="bottom" scope={scope} />
       </div>
     </div>
   );
