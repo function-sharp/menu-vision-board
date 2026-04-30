@@ -1,6 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef, KeyboardEvent } from "react";
 import { Link } from "react-router-dom";
 import { useStores, useAllItems } from "@/hooks/useDashboardData";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,9 +12,20 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatZAR, decodeText } from "@/lib/format";
-import { ExternalLink, Copy, Search, Download, Link2, AlertTriangle, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { ExternalLink, Copy, Search, Download, Link2, AlertTriangle, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X, Loader2, Info } from "lucide-react";
 import { toast } from "sonner";
+
+function isValidUrl(value: string): boolean {
+  if (!value) return false;
+  try {
+    const u = new URL(value);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
 
 type ItemLinkFilter = "any" | "item" | "store_fallback";
 
@@ -57,6 +70,33 @@ function downloadCsv(filename: string, headers: string[], rows: (string | number
 export default function UberEats() {
   const { data: stores, isLoading: storesLoading } = useStores();
   const { data: items, isLoading: itemsLoading } = useAllItems();
+  const queryClient = useQueryClient();
+
+  const updateStoreUrl = useMutation({
+    mutationFn: async ({ id, url }: { id: string; url: string | null }) => {
+      const { error } = await supabase.from("stores").update({ uber_eats_url: url }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Store link updated");
+      queryClient.invalidateQueries({ queryKey: ["stores"] });
+      queryClient.invalidateQueries({ queryKey: ["all-items"] });
+    },
+    onError: (e: Error) => toast.error(e.message || "Failed to update store link"),
+  });
+
+  const updateItemDeepLink = useMutation({
+    mutationFn: async ({ id, url }: { id: string; url: string | null }) => {
+      const { error } = await supabase.from("menu_items").update({ deep_link: url }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Item link updated");
+      queryClient.invalidateQueries({ queryKey: ["all-items"] });
+      queryClient.invalidateQueries({ queryKey: ["items"] });
+    },
+    onError: (e: Error) => toast.error(e.message || "Failed to update item link"),
+  });
 
   // Stores section state
   const [storeQuery, setStoreQuery] = useState("");
@@ -214,6 +254,14 @@ export default function UberEats() {
         />
       </div>
 
+      <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900 p-3 text-xs text-amber-800 dark:text-amber-200">
+        <Info className="h-4 w-4 mt-0.5 shrink-0" />
+        <span>
+          Click any URL cell below to edit it inline. Changes save immediately to the database, but
+          the next Excel upload or Airtable refresh may overwrite manual edits if the source data differs.
+        </span>
+      </div>
+
       {/* Stores section */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
@@ -291,15 +339,11 @@ export default function UberEats() {
                         <TableCell className="text-muted-foreground text-sm">{s.store_group ?? "—"}</TableCell>
                         <TableCell className="text-right text-sm">{s.item_count}</TableCell>
                         <TableCell className="max-w-md">
-                          {s.uber_eats_url ? (
-                            <span className="text-xs font-mono text-muted-foreground truncate block">
-                              {s.uber_eats_url}
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-                              <AlertTriangle className="h-3 w-3" /> Missing
-                            </span>
-                          )}
+                          <EditableUrlCell
+                            value={s.uber_eats_url}
+                            placeholder="Add Uber Eats store URL"
+                            onSave={(v) => updateStoreUrl.mutateAsync({ id: s.id, url: v })}
+                          />
                         </TableCell>
                         <TableCell className="text-right">
                           {s.uber_eats_url ? (
@@ -400,13 +444,14 @@ export default function UberEats() {
                       <TableHead>
                         <SortHeader label="Link" active={itemSortKey === "link"} dir={itemSortDir} onClick={() => toggleItemSort("link")} />
                       </TableHead>
+                      <TableHead className="w-72">Item deep link</TableHead>
                       <TableHead className="text-right w-40">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {pagedItems.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">
+                        <TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">
                           No items match these filters.
                         </TableCell>
                       </TableRow>
@@ -435,6 +480,13 @@ export default function UberEats() {
                             <Badge variant={isItem ? "default" : "secondary"} className="text-xs">
                               {isItem ? "Item" : "Store"}
                             </Badge>
+                          </TableCell>
+                          <TableCell className="w-72">
+                            <EditableUrlCell
+                              value={i.deep_link}
+                              placeholder="Add item deep link"
+                              onSave={(v) => updateItemDeepLink.mutateAsync({ id: i.id, url: v })}
+                            />
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
@@ -563,5 +615,127 @@ function PaginationBar({
         <Button variant="outline" size="sm" disabled={page + 1 >= totalPages} onClick={() => onPageChange(totalPages - 1)}>Last</Button>
       </div>
     </div>
+  );
+}
+
+function EditableUrlCell({
+  value,
+  placeholder,
+  onSave,
+}: {
+  value: string | null | undefined;
+  placeholder: string;
+  onSave: (url: string | null) => Promise<unknown>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value ?? "");
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing) {
+      setDraft(value ?? "");
+      // focus + select on next tick so the input is mounted
+      requestAnimationFrame(() => inputRef.current?.focus());
+    }
+  }, [editing, value]);
+
+  const startEdit = () => {
+    if (saving) return;
+    setEditing(true);
+  };
+
+  const cancel = () => {
+    setEditing(false);
+    setDraft(value ?? "");
+  };
+
+  const commit = async () => {
+    const trimmed = draft.trim();
+    const next = trimmed === "" ? null : trimmed;
+    const current = value ?? null;
+    if (next === current) { setEditing(false); return; }
+    if (next !== null && !isValidUrl(next)) {
+      toast.error("Enter a valid http(s) URL");
+      return;
+    }
+    setSaving(true);
+    try {
+      await onSave(next);
+      setEditing(false);
+    } catch {
+      // toast handled by mutation
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") { e.preventDefault(); commit(); }
+    else if (e.key === "Escape") { e.preventDefault(); cancel(); }
+  };
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1">
+        <Input
+          ref={inputRef}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={onKeyDown}
+          placeholder="https://www.ubereats.com/..."
+          className="h-8 text-xs font-mono"
+          disabled={saving}
+        />
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="h-8 w-8 p-0 shrink-0"
+          onClick={commit}
+          disabled={saving}
+          aria-label="Save"
+        >
+          {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="h-8 w-8 p-0 shrink-0"
+          onClick={cancel}
+          disabled={saving}
+          aria-label="Cancel"
+        >
+          <X className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <TooltipProvider delayDuration={300}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={startEdit}
+            className="group flex w-full items-center gap-2 text-left rounded px-1 py-0.5 hover:bg-muted/60 transition-colors"
+          >
+            {value ? (
+              <span className="text-xs font-mono text-muted-foreground truncate flex-1 min-w-0">
+                {value}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 flex-1">
+                <AlertTriangle className="h-3 w-3" /> Missing — click to add
+              </span>
+            )}
+            <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 shrink-0" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top">Click to edit · Enter to save · Esc to cancel</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
