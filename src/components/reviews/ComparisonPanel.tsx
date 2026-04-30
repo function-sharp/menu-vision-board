@@ -164,6 +164,50 @@ export function ComparisonPanel({
     });
   }, [allReady, queries, selectedStores]);
 
+  const reportRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
+  const rangeLabel = (RANGES.find((r) => r.key === range) ?? RANGES[3]).label;
+
+  const handleExportPdf = async () => {
+    if (!reportRef.current) return;
+    if (!allReady) {
+      toast.info("Wait for data to finish loading");
+      return;
+    }
+    try {
+      setExporting(true);
+      const { exportStoreReportPdf } = await import("@/lib/pdfReport");
+      const totalReviews = queries.reduce((acc, q) => acc + (q.data?.kpi.totalReviews ?? 0), 0);
+      const ratedAvg = queries.reduce(
+        (acc, q) => {
+          const k = q.data?.kpi;
+          if (!k || !k.totalReviews) return acc;
+          return { sum: acc.sum + k.avgRating * k.totalReviews, n: acc.n + k.totalReviews };
+        },
+        { sum: 0, n: 0 },
+      );
+      const avgAcross = ratedAvg.n ? ratedAvg.sum / ratedAvg.n : 0;
+      const last30 = queries.reduce((acc, q) => acc + (q.data?.kpi.last30 ?? 0), 0);
+      await exportStoreReportPdf(reportRef.current, {
+        storeName: `Store comparison (${selectedStores.length})`,
+        storeGroup: selectedStores.map((s) => s.name).join(" · "),
+        rangeLabel: `Last ${(RANGES.find((r) => r.key === range) ?? RANGES[3]).months} months`,
+        kpis: [
+          { label: "Stores compared", value: String(selectedStores.length) },
+          { label: "Total reviews", value: totalReviews.toLocaleString() },
+          { label: "Avg rating", value: avgAcross.toFixed(2) },
+          { label: "Last 30 days", value: last30.toLocaleString() },
+        ],
+      });
+      toast.success("Comparison PDF downloaded");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to generate PDF");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (selectedStores.length === 0) return null;
 
   return (
