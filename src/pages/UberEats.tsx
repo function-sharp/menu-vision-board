@@ -253,66 +253,84 @@ export default function UberEats() {
           {storesLoading ? (
             <Skeleton className="h-64" />
           ) : (
-            <div className="overflow-x-auto rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Store</TableHead>
-                    <TableHead>Group</TableHead>
-                    <TableHead className="text-right">Items</TableHead>
-                    <TableHead>Uber Eats URL</TableHead>
-                    <TableHead className="text-right w-48">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredStores.length === 0 && (
+            <>
+              <div className="overflow-x-auto rounded-md border">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">
-                        No stores match these filters.
-                      </TableCell>
+                      <TableHead>
+                        <SortHeader label="Store" active={storeSortKey === "name"} dir={storeSortDir} onClick={() => toggleStoreSort("name")} />
+                      </TableHead>
+                      <TableHead>
+                        <SortHeader label="Group" active={storeSortKey === "store_group"} dir={storeSortDir} onClick={() => toggleStoreSort("store_group")} />
+                      </TableHead>
+                      <TableHead className="text-right">
+                        <SortHeader label="Items" align="right" active={storeSortKey === "item_count"} dir={storeSortDir} onClick={() => toggleStoreSort("item_count")} />
+                      </TableHead>
+                      <TableHead>
+                        <SortHeader label="Uber Eats URL" active={storeSortKey === "uber_eats_url"} dir={storeSortDir} onClick={() => toggleStoreSort("uber_eats_url")} />
+                      </TableHead>
+                      <TableHead className="text-right w-48">Actions</TableHead>
                     </TableRow>
-                  )}
-                  {filteredStores.map((s) => (
-                    <TableRow key={s.id}>
-                      <TableCell>
-                        <Link to={`/stores/${s.slug}`} className="font-medium hover:text-primary hover:underline">
-                          {s.name}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">{s.store_group ?? "—"}</TableCell>
-                      <TableCell className="text-right text-sm">{s.item_count}</TableCell>
-                      <TableCell className="max-w-md">
-                        {s.uber_eats_url ? (
-                          <span className="text-xs font-mono text-muted-foreground truncate block">
-                            {s.uber_eats_url}
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-                            <AlertTriangle className="h-3 w-3" /> Missing
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {s.uber_eats_url ? (
-                          <div className="flex justify-end gap-1">
-                            <Button asChild size="sm" variant="outline">
-                              <a href={s.uber_eats_url} target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open
-                              </a>
-                            </Button>
-                            <Button size="sm" variant="ghost" onClick={() => copyUrl(s.uber_eats_url!)}>
-                              <Copy className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {pagedStores.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">
+                          No stores match these filters.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {pagedStores.map((s) => (
+                      <TableRow key={s.id}>
+                        <TableCell>
+                          <Link to={`/stores/${s.slug}`} className="font-medium hover:text-primary hover:underline">
+                            {s.name}
+                          </Link>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">{s.store_group ?? "—"}</TableCell>
+                        <TableCell className="text-right text-sm">{s.item_count}</TableCell>
+                        <TableCell className="max-w-md">
+                          {s.uber_eats_url ? (
+                            <span className="text-xs font-mono text-muted-foreground truncate block">
+                              {s.uber_eats_url}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                              <AlertTriangle className="h-3 w-3" /> Missing
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {s.uber_eats_url ? (
+                            <div className="flex justify-end gap-1">
+                              <Button asChild size="sm" variant="outline">
+                                <a href={s.uber_eats_url} target="_blank" rel="noopener noreferrer">
+                                  <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open
+                                </a>
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => copyUrl(s.uber_eats_url!)}>
+                                <Copy className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <PaginationBar
+                page={safeStorePage}
+                totalPages={storeTotalPages}
+                pageSize={storePageSize}
+                totalRows={filteredStores.length}
+                onPageChange={setStorePage}
+                onPageSizeChange={(n) => { setStorePageSize(n); setStorePage(0); }}
+              />
+            </>
           )}
         </CardContent>
       </Card>
