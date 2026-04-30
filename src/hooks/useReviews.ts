@@ -70,6 +70,7 @@ export const useReviews = (filters: ReviewFilters = {}) =>
     queryFn: async () => {
       let q = supabase.from("google_reviews").select("*");
       if (filters.storeId) q = q.eq("store_id", filters.storeId);
+      else if (filters.storeIds && filters.storeIds.length > 0) q = q.in("store_id", filters.storeIds);
       if (filters.stars) q = q.eq("stars", filters.stars);
       if (filters.hasText) q = q.not("text", "is", null);
       if (filters.hasResponse) q = q.not("response_text", "is", null);
