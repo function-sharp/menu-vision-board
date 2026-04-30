@@ -228,6 +228,11 @@ function StoreReviewsTab({ storeId }: { storeId: string }) {
         months={activeRange.months}
         title={`Rating distribution — last ${activeRange.months} months`}
       />
+      <SentimentTrendChart
+        storeId={storeId}
+        months={activeRange.months}
+        title={`Sentiment over time — last ${activeRange.months} months`}
+      />
       <div className="grid md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4 space-y-2">
