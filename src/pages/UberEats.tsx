@@ -350,20 +350,23 @@ export default function UberEats() {
                           />
                         </TableCell>
                         <TableCell className="text-right">
-                          {s.uber_eats_url ? (
-                            <div className="flex justify-end gap-1">
-                              <Button asChild size="sm" variant="outline">
-                                <a href={s.uber_eats_url} target="_blank" rel="noopener noreferrer">
-                                  <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open
-                                </a>
-                              </Button>
-                              <Button size="sm" variant="ghost" onClick={() => copyUrl(s.uber_eats_url!)}>
-                                <Copy className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">—</span>
-                          )}
+                          <div className="flex justify-end items-center gap-1">
+                            <StoreScrapeActions storeId={s.id} hasUrl={!!s.uber_eats_url} />
+                            {s.uber_eats_url ? (
+                              <>
+                                <Button asChild size="sm" variant="outline">
+                                  <a href={s.uber_eats_url} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open
+                                  </a>
+                                </Button>
+                                <Button size="sm" variant="ghost" onClick={() => copyUrl(s.uber_eats_url!)}>
+                                  <Copy className="h-3.5 w-3.5" />
+                                </Button>
+                              </>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -493,7 +496,13 @@ export default function UberEats() {
                             />
                           </TableCell>
                           <TableCell className="text-right">
-                            <div className="flex justify-end gap-1">
+                            <div className="flex justify-end items-center gap-1">
+                              <ItemScrapeActions
+                                itemId={i.id}
+                                storeId={i.store_id}
+                                hasItemLink={!!i.deep_link}
+                                hasStoreUrl={!!i.stores.uber_eats_url}
+                              />
                               <Button asChild size="sm" variant="outline">
                                 <a href={url} target="_blank" rel="noopener noreferrer">
                                   <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open
