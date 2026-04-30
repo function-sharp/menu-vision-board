@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Star } from "lucide-react";
 
-export function ResponsePerformance({ storeId }: { storeId?: string | null }) {
-  const { data, isLoading } = useResponsePerformance(storeId ?? null);
+export function ResponsePerformance({ storeId, storeIds }: { storeId?: string | null; storeIds?: string[] | null }) {
+  const { data, isLoading } = useResponsePerformance(storeId ?? null, storeIds ?? null);
 
   return (
     <Card>

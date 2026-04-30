@@ -10,7 +10,8 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { useStores, useAllItems } from "@/hooks/useDashboardData";
-import { Store as StoreIcon, Utensils, Tag, ExternalLink } from "lucide-react";
+import { useReviewSearch } from "@/hooks/useReviews";
+import { Store as StoreIcon, Utensils, Tag, ExternalLink, MessageSquare, Star } from "lucide-react";
 import { formatZAR } from "@/lib/format";
 
 interface GlobalSearchProps {
@@ -23,6 +24,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
   const [query, setQuery] = useState("");
   const { data: stores } = useStores();
   const { data: items } = useAllItems();
+  const { data: reviewMatches } = useReviewSearch(query, open);
 
   // Reset query when dialog closes
   useEffect(() => {
@@ -81,12 +83,12 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
       <CommandInput
         value={query}
         onValueChange={setQuery}
-        placeholder="Search stores, menu items, SKUs, categories..."
+        placeholder="Search stores, menu items, reviews, SKUs, categories..."
       />
       <CommandList>
         {q.length === 0 ? (
-          <CommandEmpty>Start typing to search stores and menu items.</CommandEmpty>
-        ) : storeMatches.length === 0 && itemMatches.length === 0 && categoryMatches.length === 0 ? (
+          <CommandEmpty>Start typing to search stores, menu items, and reviews.</CommandEmpty>
+        ) : storeMatches.length === 0 && itemMatches.length === 0 && categoryMatches.length === 0 && (reviewMatches?.length ?? 0) === 0 ? (
           <CommandEmpty>No results for "{query}".</CommandEmpty>
         ) : null}
 
@@ -155,6 +157,39 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
                   </div>
                 </CommandItem>
               ))}
+            </CommandGroup>
+          </>
+        )}
+
+        {reviewMatches && reviewMatches.length > 0 && (
+          <>
+            {(storeMatches.length > 0 || categoryMatches.length > 0 || itemMatches.length > 0) && <CommandSeparator />}
+            <CommandGroup heading="Reviews">
+              {reviewMatches.map((r) => {
+                const storeName = stores?.find((s) => s.id === r.store_id)?.name;
+                const snippet = (r.text ?? "").replace(/\s+/g, " ").slice(0, 90);
+                return (
+                  <CommandItem
+                    key={r.id}
+                    value={`review-${r.id}-${r.reviewer_name ?? ""}-${snippet}`}
+                    onSelect={() => go(`/reviews?focus=${encodeURIComponent(r.review_id)}&tab=list`)}
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2 text-muted-foreground shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="truncate text-sm">{snippet || "(no text)"}</div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {[r.reviewer_name, storeName, r.published_at ? new Date(r.published_at).toLocaleDateString() : null].filter(Boolean).join(" · ")}
+                      </div>
+                    </div>
+                    {r.stars != null && (
+                      <span className="inline-flex items-center gap-0.5 text-xs text-muted-foreground tabular-nums shrink-0">
+                        <Star className="h-3 w-3 fill-current text-primary" />
+                        {r.stars}
+                      </span>
+                    )}
+                  </CommandItem>
+                );
+              })}
             </CommandGroup>
           </>
         )}

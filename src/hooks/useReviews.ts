@@ -42,6 +42,7 @@ export type GooglePlace = {
 
 export interface ReviewFilters {
   storeId?: string | null;
+  storeIds?: string[] | null; // restrict to a set of stores (e.g. by group/city)
   stars?: number | null; // exact star value
   hasText?: boolean;
   hasResponse?: boolean;
@@ -69,6 +70,7 @@ export const useReviews = (filters: ReviewFilters = {}) =>
     queryFn: async () => {
       let q = supabase.from("google_reviews").select("*");
       if (filters.storeId) q = q.eq("store_id", filters.storeId);
+      else if (filters.storeIds && filters.storeIds.length > 0) q = q.in("store_id", filters.storeIds);
       if (filters.stars) q = q.eq("stars", filters.stars);
       if (filters.hasText) q = q.not("text", "is", null);
       if (filters.hasResponse) q = q.not("response_text", "is", null);
@@ -101,18 +103,14 @@ export const useReviews = (filters: ReviewFilters = {}) =>
   });
 
 // Aggregate stats computed via individual count queries (cheap with indexes)
-export const useReviewStats = (storeId?: string | null) =>
+export const useReviewStats = (storeId?: string | null, storeIds?: string[] | null) =>
   useQuery({
-    queryKey: ["google-review-stats", storeId ?? "all"],
+    queryKey: ["google-review-stats", storeId ?? "all", storeIds ?? null],
     queryFn: async () => {
-      const base = () => {
-        let q = supabase.from("google_reviews").select("stars, response_text, published_at, detailed_food, detailed_service, detailed_atmosphere", { count: "exact" });
-        if (storeId) q = q.eq("store_id", storeId);
-        return q;
-      };
-      // pull a sample for averages — capped to 5000 for performance
+      // pull a sample for averages — capped to 50000 for performance
       let q = supabase.from("google_reviews").select("stars,response_text,published_at,detailed_food,detailed_service,detailed_atmosphere");
       if (storeId) q = q.eq("store_id", storeId);
+      else if (storeIds && storeIds.length > 0) q = q.in("store_id", storeIds);
       const { data, error } = await q.limit(50000);
       if (error) throw error;
       const rows = data ?? [];
@@ -207,9 +205,9 @@ export const useStoreReviewStats = () =>
   });
 
 // Trend: monthly volume + avg stars, last 24 months
-export const useReviewTrend = (storeId?: string | null, months = 24) =>
+export const useReviewTrend = (storeId?: string | null, months = 24, storeIds?: string[] | null) =>
   useQuery({
-    queryKey: ["review-trend", storeId ?? "all", months],
+    queryKey: ["review-trend", storeId ?? "all", months, storeIds ?? null],
     queryFn: async () => {
       const since = new Date();
       since.setMonth(since.getMonth() - months);
@@ -218,6 +216,7 @@ export const useReviewTrend = (storeId?: string | null, months = 24) =>
         .select("stars,published_at,response_text")
         .gte("published_at", since.toISOString());
       if (storeId) q = q.eq("store_id", storeId);
+      else if (storeIds && storeIds.length > 0) q = q.in("store_id", storeIds);
       // Pull in chunks (could be > 1000)
       const all: any[] = [];
       const pageSize = 1000;
@@ -260,12 +259,13 @@ export const useReviewTrend = (storeId?: string | null, months = 24) =>
   });
 
 // Response performance: % responded by star + median reply time per star
-export const useResponsePerformance = (storeId?: string | null) =>
+export const useResponsePerformance = (storeId?: string | null, storeIds?: string[] | null) =>
   useQuery({
-    queryKey: ["review-response-perf", storeId ?? "all"],
+    queryKey: ["review-response-perf", storeId ?? "all", storeIds ?? null],
     queryFn: async () => {
       let q = supabase.from("google_reviews").select("stars,published_at,response_at,response_text");
       if (storeId) q = q.eq("store_id", storeId);
+      else if (storeIds && storeIds.length > 0) q = q.in("store_id", storeIds);
       const all: any[] = [];
       const pageSize = 1000;
       for (let from = 0; ; from += pageSize) {
@@ -352,6 +352,24 @@ export const useGenerateInsight = () => {
     onError: (e: Error) => toast.error(e.message || "Failed to generate insights"),
   });
 };
+
+// Lightweight server-side search across reviews (used in Global Search ⌘K)
+export const useReviewSearch = (query: string, enabled: boolean) =>
+  useQuery({
+    queryKey: ["review-search", query],
+    enabled: enabled && query.trim().length >= 2,
+    queryFn: async () => {
+      const s = query.trim().replace(/[%_]/g, "");
+      const { data, error } = await supabase
+        .from("google_reviews")
+        .select("id,review_id,store_id,reviewer_name,stars,text,published_at")
+        .or(`text.ilike.%${s}%,reviewer_name.ilike.%${s}%,response_text.ilike.%${s}%`)
+        .order("published_at", { ascending: false, nullsFirst: false })
+        .limit(8);
+      if (error) throw error;
+      return (data ?? []) as Pick<GoogleReview, "id" | "review_id" | "store_id" | "reviewer_name" | "stars" | "text" | "published_at">[];
+    },
+  });
 
 // Update google_places.store_id manually (used in Manage Links tab)
 export const useUpdatePlaceStore = () => {

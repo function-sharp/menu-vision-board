@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useStores, useAllItems } from "@/hooks/useDashboardData";
+import { useGooglePlaces, useStoreReviewStats } from "@/hooks/useReviews";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -48,11 +49,15 @@ type Row = {
   min_price: number | null;
   max_price: number | null;
   linked_pct: number; // 0..1, items with deep_link
+  google_rating: number | null;
+  google_reviews: number | null;
 };
 
 export default function StoresOverview() {
   const { data: stores, isLoading: storesLoading } = useStores();
   const { data: items, isLoading: itemsLoading } = useAllItems();
+  const { data: places } = useGooglePlaces();
+  const { data: reviewStats } = useStoreReviewStats();
 
   const [q, setQ] = useState("");
   const [group, setGroup] = useState<string>("all");
@@ -75,10 +80,21 @@ export default function StoresOverview() {
       if (it.deep_link) m.linked += 1;
       byStore.set(it.store_id, m);
     }
+    const placeByStore = new Map<string, { rating: number | null; count: number | null }>();
+    (places ?? []).forEach((p) => {
+      if (p.store_id) placeByStore.set(p.store_id, { rating: p.total_score, count: p.reviews_count });
+    });
+    const reviewByStore = new Map<string, { reviews: number; avg_stars: number }>();
+    (reviewStats ?? []).forEach((r) => reviewByStore.set(r.store_id, { reviews: r.reviews, avg_stars: r.avg_stars }));
     return stores.map((s) => {
       const agg = byStore.get(s.id);
       const prices = agg?.prices ?? [];
       const avg = prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : null;
+      const place = placeByStore.get(s.id);
+      const review = reviewByStore.get(s.id);
+      // Prefer the live aggregated review count + avg from the database; fall back to the cached Apify summary.
+      const google_rating = review?.avg_stars ?? place?.rating ?? null;
+      const google_reviews = review?.reviews ?? place?.count ?? null;
       return {
         id: s.id,
         slug: s.slug,
@@ -93,9 +109,11 @@ export default function StoresOverview() {
         min_price: prices.length ? Math.min(...prices) : null,
         max_price: prices.length ? Math.max(...prices) : null,
         linked_pct: agg && agg.total > 0 ? agg.linked / agg.total : 0,
+        google_rating,
+        google_reviews,
       };
     });
-  }, [stores, items]);
+  }, [stores, items, places, reviewStats]);
 
   const filtered = useMemo(() => {
     const ql = q.toLowerCase();
@@ -280,6 +298,8 @@ export default function StoresOverview() {
                     <TableHead className="text-right cursor-pointer select-none" onClick={() => toggleSort("rating")}>
                       Rating <SortIcon k="rating" />
                     </TableHead>
+                    <TableHead className="text-right">Google ★</TableHead>
+                    <TableHead className="text-right">Google #</TableHead>
                     <TableHead className="w-[140px] text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -329,6 +349,17 @@ export default function StoresOverview() {
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {r.google_rating != null ? (
+                          <Link to={`/reviews?tab=stores`} className="inline-flex items-center gap-1 text-sm hover:text-primary">
+                            <Star className="h-3 w-3 fill-current text-primary" />
+                            <span className="tabular-nums">{r.google_rating.toFixed(2)}</span>
+                          </Link>
+                        ) : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-xs text-muted-foreground">
+                        {r.google_reviews != null ? r.google_reviews.toLocaleString() : "—"}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="inline-flex gap-1">

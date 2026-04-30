@@ -4,9 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useStores, useAllItems } from "@/hooks/useDashboardData";
+import { useReviewStats, useReviewTrend } from "@/hooks/useReviews";
+import { Stars } from "@/components/StarDistribution";
 import { formatZAR } from "@/lib/format";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { Star, Store as StoreIcon, Utensils, TrendingUp, Layers } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ComposedChart, Line } from "recharts";
+import { Star, Store as StoreIcon, Utensils, TrendingUp, Layers, MessageSquare, ReplyAll, ArrowRight } from "lucide-react";
 
 export default function Overview() {
   const { data: stores, isLoading: sl } = useStores();
@@ -152,6 +154,71 @@ export default function Overview() {
           </div>
         </CardContent>
       </Card>
+
+      <ReviewsPulseCard />
+    </div>
+  );
+}
+
+function ReviewsPulseCard() {
+  const { data: stats } = useReviewStats(null);
+  const { data: trend } = useReviewTrend(null, 12);
+  const trendData = useMemo(() => trend ?? [], [trend]);
+
+  return (
+    <Card>
+      <CardHeader className="flex-row items-center justify-between pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <MessageSquare className="h-4 w-4 text-primary" /> Reviews pulse
+        </CardTitle>
+        <Link to="/reviews" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
+          Open hub <ArrowRight className="h-3 w-3" />
+        </Link>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {!stats ? (
+          <Skeleton className="h-32" />
+        ) : (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <PulseStat icon={<MessageSquare className="h-3.5 w-3.5" />} label="Total reviews" value={stats.total.toLocaleString()} />
+              <PulseStat
+                icon={<Star className="h-3.5 w-3.5" />}
+                label="Avg rating"
+                value={stats.avgStars.toFixed(2)}
+                extra={<Stars value={stats.avgStars} size={11} />}
+              />
+              <PulseStat icon={<ReplyAll className="h-3.5 w-3.5" />} label="Reply rate" value={`${Math.round(stats.responseRate * 100)}%`} />
+              <PulseStat icon={<TrendingUp className="h-3.5 w-3.5" />} label="Last 30 days" value={stats.last30.toLocaleString()} />
+            </div>
+            <div className="h-32 w-full">
+              <ResponsiveContainer>
+                <ComposedChart data={trendData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="label" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
+                  <YAxis yAxisId="left" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} width={28} />
+                  <YAxis yAxisId="right" orientation="right" domain={[0, 5]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} width={20} />
+                  <Tooltip contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }} />
+                  <Bar yAxisId="left" dataKey="count" fill="hsl(var(--primary))" opacity={0.6} radius={[3, 3, 0, 0]} />
+                  <Line yAxisId="right" type="monotone" dataKey="avg" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function PulseStat({ icon, label, value, extra }: { icon: React.ReactNode; label: string; value: string; extra?: React.ReactNode }) {
+  return (
+    <div className="rounded-md border p-3">
+      <div className="flex items-center justify-between text-[10px] uppercase tracking-wide text-muted-foreground">
+        <span>{label}</span>{icon}
+      </div>
+      <div className="text-lg font-bold mt-1">{value}</div>
+      {extra && <div className="mt-1">{extra}</div>}
     </div>
   );
 }

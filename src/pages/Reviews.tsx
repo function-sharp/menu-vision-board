@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -9,11 +9,13 @@ import { StoresTab } from "@/components/reviews/StoresTab";
 import { ReviewsListTab } from "@/components/reviews/ReviewsListTab";
 import { InsightsTab } from "@/components/reviews/InsightsTab";
 import { ManageLinksTab } from "@/components/reviews/ManageLinksTab";
+import { ReviewFiltersBar, defaultScope, type ReviewScope } from "@/components/reviews/ReviewFiltersBar";
 
 export default function Reviews() {
   const { data: places } = useGooglePlaces();
   const sync = useSyncReviews();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [scope, setScope] = useState<ReviewScope>(defaultScope);
 
   // Auto-jump to "list" tab when a focus param is present (from Global Search)
   const initialTab = searchParams.get("tab") ?? (searchParams.get("focus") ? "list" : "overview");
@@ -51,6 +53,10 @@ export default function Reviews() {
         </div>
       </div>
 
+      <div className="rounded-lg border bg-card/50 p-3">
+        <ReviewFiltersBar scope={scope} onChange={setScope} />
+      </div>
+
       <Tabs value={initialTab} onValueChange={setTab} className="space-y-4">
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="overview"><BarChart3 className="h-3.5 w-3.5 mr-1.5" /> Overview</TabsTrigger>
@@ -60,10 +66,10 @@ export default function Reviews() {
           <TabsTrigger value="links"><Link2 className="h-3.5 w-3.5 mr-1.5" /> Manage Links</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview"><OverviewTab /></TabsContent>
-        <TabsContent value="stores"><StoresTab /></TabsContent>
-        <TabsContent value="list"><ReviewsListTab /></TabsContent>
-        <TabsContent value="insights"><InsightsTab /></TabsContent>
+        <TabsContent value="overview"><OverviewTab scope={scope} /></TabsContent>
+        <TabsContent value="stores"><StoresTab scope={scope} /></TabsContent>
+        <TabsContent value="list"><ReviewsListTab scope={scope} /></TabsContent>
+        <TabsContent value="insights"><InsightsTab scope={scope} /></TabsContent>
         <TabsContent value="links"><ManageLinksTab /></TabsContent>
       </Tabs>
     </div>
