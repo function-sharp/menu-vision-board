@@ -9,6 +9,7 @@ import AppLayout from "./components/AppLayout";
 import Auth from "./pages/Auth";
 import Overview from "./pages/Overview";
 import Stores from "./pages/Stores";
+import StoresOverview from "./pages/StoresOverview";
 import StoreDetail from "./pages/StoreDetail";
 import MenuBrowser from "./pages/MenuBrowser";
 import ItemComparison from "./pages/ItemComparison";
@@ -34,6 +35,7 @@ const App = () => (
               <Route element={<AppLayout />}>
                 <Route path="/" element={<Overview />} />
                 <Route path="/stores" element={<Stores />} />
+                <Route path="/stores-overview" element={<StoresOverview />} />
                 <Route path="/stores/:slug" element={<StoreDetail />} />
                 <Route path="/menu" element={<MenuBrowser />} />
                 <Route path="/compare" element={<ItemComparison />} />
