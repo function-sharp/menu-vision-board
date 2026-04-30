@@ -255,22 +255,45 @@ function StoreReviewsTab({ storeId, store }: { storeId: string; store: any }) {
           ))}
         </div>
       </div>
-      <div ref={reportRef} className="space-y-4 bg-background p-2 rounded-md">
-        <ReviewTrendChart
-          storeId={storeId}
-          months={activeRange.months}
-          title={`Review trend — last ${activeRange.months} months`}
-        />
-        <StarDistributionTrendChart
-          storeId={storeId}
-          months={activeRange.months}
-          title={`Rating distribution — last ${activeRange.months} months`}
-        />
-        <SentimentTrendChart
-          storeId={storeId}
-          months={activeRange.months}
-          title={`Sentiment over time — last ${activeRange.months} months`}
-        />
+      <div ref={reportRef} className="space-y-6 bg-background p-4 rounded-md">
+        <ReportSection
+          heading="Review volume & average rating"
+          description="Monthly review volume (bars) alongside average star rating and reply rate (lines)."
+        >
+          <div className="h-72">
+            <ReviewTrendChart
+              storeId={storeId}
+              months={activeRange.months}
+              title={`Review trend — last ${activeRange.months} months`}
+            />
+          </div>
+        </ReportSection>
+
+        <ReportSection
+          heading="Rating distribution over time"
+          description="Stacked monthly counts split by 1★ to 5★ ratings."
+        >
+          <div className="h-72">
+            <StarDistributionTrendChart
+              storeId={storeId}
+              months={activeRange.months}
+              title={`Rating distribution — last ${activeRange.months} months`}
+            />
+          </div>
+        </ReportSection>
+
+        <ReportSection
+          heading="Sentiment trend"
+          description="Share of positive (4–5★), neutral (3★), and negative (1–2★) reviews each month."
+        >
+          <div className="h-72">
+            <SentimentTrendChart
+              storeId={storeId}
+              months={activeRange.months}
+              title={`Sentiment over time — last ${activeRange.months} months`}
+            />
+          </div>
+        </ReportSection>
       </div>
       <div className="grid md:grid-cols-3 gap-4">
         <Card>
