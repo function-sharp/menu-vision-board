@@ -6,12 +6,104 @@
  * label, so that a row labelled "Reply rate" or "Average rating" means
  * exactly the same thing regardless of which export produced it.
  */
+import { supabase } from "@/integrations/supabase/client";
 import {
   fmtDecimal,
   fmtInt,
   fmtPctFromFraction,
   fmtRating,
 } from "@/lib/pdfReport";
+
+/* ------------------------------------------------------------------ */
+/* Canonical range-scoped fetch (one source of truth for both exports) */
+/* ------------------------------------------------------------------ */
+
+export interface StoreTrendPoint {
+  month: string;
+  label: string;
+  count: number;
+  avg: number;
+  positivePct: number;
+}
+
+export interface StoreTrendResult {
+  series: StoreTrendPoint[];
+  kpi: { totalReviews: number; avgRating: number; replyRate: number; last30: number };
+}
+
+/** Fetch monthly buckets + range-scoped KPI rollup for a single store. */
+export async function fetchStoreTrend(storeId: string, months: number): Promise<StoreTrendResult> {
+  const since = new Date();
+  since.setMonth(since.getMonth() - months);
+  const all: Array<{ stars: number | null; published_at: string | null; response_text: string | null }> = [];
+  const pageSize = 1000;
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabase
+      .from("google_reviews")
+      .select("stars,published_at,response_text")
+      .eq("store_id", storeId)
+      .gte("published_at", since.toISOString())
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    all.push(...(data as any));
+    if (data.length < pageSize) break;
+  }
+  const buckets = new Map<string, { count: number; sum: number; n: number; replied: number; pos: number; neu: number; neg: number }>();
+  for (const r of all) {
+    if (!r.published_at) continue;
+    const d = new Date(r.published_at);
+    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+    const b = buckets.get(key) ?? { count: 0, sum: 0, n: 0, replied: 0, pos: 0, neu: 0, neg: 0 };
+    b.count++;
+    if (r.stars != null) {
+      b.sum += r.stars;
+      b.n++;
+      if (r.stars >= 4) b.pos++;
+      else if (r.stars === 3) b.neu++;
+      else b.neg++;
+    }
+    if (r.response_text) b.replied++;
+    buckets.set(key, b);
+  }
+  const series: StoreTrendPoint[] = [];
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setUTCDate(1);
+    d.setUTCMonth(d.getUTCMonth() - i);
+    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+    const b = buckets.get(key);
+    const ratedTotal = b ? b.pos + b.neu + b.neg : 0;
+    series.push({
+      month: key,
+      label: d.toLocaleDateString(undefined, { month: "short", year: "2-digit" }),
+      count: b?.count ?? 0,
+      avg: b?.n ? +(b.sum / b.n).toFixed(2) : 0,
+      positivePct: ratedTotal ? +((b!.pos / ratedTotal) * 100).toFixed(1) : 0,
+    });
+  }
+  const totalReviews = all.length;
+  const ratedAll = all.filter((r) => r.stars != null);
+  const avgRating = ratedAll.length ? ratedAll.reduce((a, r) => a + (r.stars as number), 0) / ratedAll.length : 0;
+  const replied = all.filter((r) => r.response_text).length;
+  const replyRate = totalReviews ? replied / totalReviews : 0;
+  const last30Cutoff = Date.now() - 30 * 86400_000;
+  const last30 = all.filter((r) => r.published_at && new Date(r.published_at).getTime() >= last30Cutoff).length;
+  return { series, kpi: { totalReviews, avgRating, replyRate, last30 } };
+}
+
+/** Convert a fetched trend result into the canonical StoreKpi for a store. */
+export function trendToStoreKpi(storeId: string, storeName: string, t: StoreTrendResult): StoreKpi {
+  return {
+    storeId,
+    storeName,
+    totalReviews: t.kpi.totalReviews,
+    avgRating: t.kpi.avgRating,
+    replyRate: t.kpi.replyRate,
+    last30: t.kpi.last30,
+    monthlyCounts: t.series.map((p) => p.count),
+  };
+}
 
 /** Per-store rollup, range-scoped (i.e. limited to the selected timeframe). */
 export interface StoreKpi {
