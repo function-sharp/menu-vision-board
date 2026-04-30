@@ -212,6 +212,7 @@ const TREND_RANGES: Array<{ key: string; label: string; months: number }> = [
 
 function StoreReviewsTab({ storeId, store }: { storeId: string; store: any }) {
   const { data: stats } = useReviewStats(storeId);
+  const { data: trend } = useReviewTrend(storeId, 36);
   const { data: reviews, isLoading } = useReviews({ storeId, sortBy: "newest", limit: 100 });
   const [trendRange, setTrendRange] = useState("24m");
   const activeRange = TREND_RANGES.find((r) => r.key === trendRange) ?? TREND_RANGES[3];
