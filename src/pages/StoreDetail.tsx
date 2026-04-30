@@ -230,12 +230,22 @@ function StoreReviewsTab({ storeId, store }: { storeId: string; store: any }) {
         storeAddress: store?.address ?? null,
         rangeLabel: `Last ${activeRange.months} months`,
         kpis: stats
-          ? [
-              { label: "Total reviews", value: stats.total.toLocaleString() },
-              { label: "Avg rating", value: stats.avgStars.toFixed(2) },
-              { label: "Reply rate", value: `${Math.round(stats.responseRate * 100)}%` },
-              { label: "Last 30 days", value: stats.last30.toLocaleString() },
-            ]
+          ? (() => {
+              const dist = stats.distribution ?? [0, 0, 0, 0, 0];
+              const rangeBuckets = (trend ?? []).slice(-activeRange.months);
+              const rangeTotal = rangeBuckets.reduce((a, b) => a + (b.count ?? 0), 0);
+              const avgMonthly = rangeBuckets.length ? rangeTotal / rangeBuckets.length : 0;
+              return [
+                { label: "Total reviews (all time)", value: stats.total.toLocaleString() },
+                { label: "Average rating", value: `${stats.avgStars.toFixed(2)} / 5` },
+                { label: "Reply rate", value: `${Math.round(stats.responseRate * 100)}%` },
+                { label: "Reviews in last 30 days", value: stats.last30.toLocaleString() },
+                { label: `Reviews in selected range (${activeRange.months}m)`, value: rangeTotal.toLocaleString() },
+                { label: "Average reviews per month", value: avgMonthly.toFixed(1) },
+                { label: "5★ reviews (all time)", value: (dist[4] ?? 0).toLocaleString() },
+                { label: "1★ reviews (all time)", value: (dist[0] ?? 0).toLocaleString() },
+              ];
+            })()
           : [],
       });
       toast.success("PDF report downloaded");
