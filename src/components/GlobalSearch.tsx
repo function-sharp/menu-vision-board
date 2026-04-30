@@ -10,7 +10,8 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { useStores, useAllItems } from "@/hooks/useDashboardData";
-import { Store as StoreIcon, Utensils, Tag, ExternalLink } from "lucide-react";
+import { useReviewSearch } from "@/hooks/useReviews";
+import { Store as StoreIcon, Utensils, Tag, ExternalLink, MessageSquare, Star } from "lucide-react";
 import { formatZAR } from "@/lib/format";
 
 interface GlobalSearchProps {
@@ -23,6 +24,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
   const [query, setQuery] = useState("");
   const { data: stores } = useStores();
   const { data: items } = useAllItems();
+  const { data: reviewMatches } = useReviewSearch(query, open);
 
   // Reset query when dialog closes
   useEffect(() => {
