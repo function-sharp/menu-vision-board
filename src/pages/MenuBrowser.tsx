@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { formatZAR, decodeText } from "@/lib/format";
-import { Search, Download, Bookmark, BookmarkPlus, X, MoreVertical, Trash2 } from "lucide-react";
+import { Search, Download, Bookmark, BookmarkPlus, X, MoreVertical, Trash2, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -134,10 +134,11 @@ export default function MenuBrowser() {
   const hasFilters = filters.q !== "" || filters.storeFilter !== "all" || filters.categoryFilter !== "all" || filters.groupFilter !== "all";
 
   const exportCsv = () => {
-    const headers = ["Store", "Group", "Category", "Item", "Description", "Price (ZAR)"];
+    const headers = ["Store", "Group", "Category", "Item", "Description", "Price (ZAR)", "Uber Eats URL"];
     const rows = filtered.map((i) => [
       i.stores.name, i.stores.store_group ?? "", i.category ?? "", decodeText(i.name),
       decodeText(i.description ?? "").replace(/\n/g, " "), i.price ?? "",
+      i.deep_link ?? i.stores.uber_eats_url ?? "",
     ]);
     const csv = [headers, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -282,20 +283,41 @@ export default function MenuBrowser() {
                     <TableHead>Store</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead className="text-right">Price</TableHead>
+                    <TableHead className="text-right">Uber Eats</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paged.map((i) => (
-                    <TableRow key={i.id}>
-                      <TableCell className="max-w-xs">
-                        <div className="font-medium">{decodeText(i.name)}</div>
-                        {i.description && <div className="text-xs text-muted-foreground line-clamp-1">{decodeText(i.description)}</div>}
-                      </TableCell>
-                      <TableCell><Link className="hover:text-primary hover:underline" to={`/stores/${i.stores.slug}`}>{i.stores.name}</Link></TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{decodeText(i.category ?? "")}</TableCell>
-                      <TableCell className="text-right font-semibold whitespace-nowrap">{formatZAR(Number(i.price))}</TableCell>
-                    </TableRow>
-                  ))}
+                  {paged.map((i) => {
+                    const url = i.deep_link ?? i.stores.uber_eats_url ?? null;
+                    const isItemLink = !!i.deep_link;
+                    return (
+                      <TableRow key={i.id}>
+                        <TableCell className="max-w-xs">
+                          <div className="font-medium">{decodeText(i.name)}</div>
+                          {i.description && <div className="text-xs text-muted-foreground line-clamp-1">{decodeText(i.description)}</div>}
+                        </TableCell>
+                        <TableCell><Link className="hover:text-primary hover:underline" to={`/stores/${i.stores.slug}`}>{i.stores.name}</Link></TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{decodeText(i.category ?? "")}</TableCell>
+                        <TableCell className="text-right font-semibold whitespace-nowrap">{formatZAR(Number(i.price))}</TableCell>
+                        <TableCell className="text-right">
+                          {url ? (
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={isItemLink ? "Open this item on Uber Eats" : "Open store on Uber Eats"}
+                              className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline whitespace-nowrap"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                              {isItemLink ? "Item" : "Store"}
+                            </a>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
