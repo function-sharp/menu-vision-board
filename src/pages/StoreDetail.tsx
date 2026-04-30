@@ -71,11 +71,16 @@ export default function StoreDetail() {
             {store.telephone && <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> <a href={`tel:+${store.telephone}`} className="hover:underline">+{store.telephone}</a></div>}
           </div>
           {store.uber_eats_url && (
-            <Button asChild variant="default" size="sm" className="w-fit">
-              <a href={store.uber_eats_url} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="h-4 w-4 mr-2" /> Order on Uber Eats
-              </a>
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button asChild variant="default" size="sm">
+                <a href={store.uber_eats_url} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-4 w-4 mr-2" /> Order on Uber Eats
+                </a>
+              </Button>
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/uber-eats">View Uber Eats hub</Link>
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
