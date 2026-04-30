@@ -20,14 +20,39 @@ export async function exportStoreReportPdf(
 ): Promise<void> {
   const generatedAt = meta.generatedAt ?? new Date();
 
-  // Render the charts area to a canvas at 2x for crisp output.
-  const canvas = await html2canvas(element, {
-    scale: 2,
-    backgroundColor: "#ffffff",
-    useCORS: true,
-    logging: false,
-    windowWidth: element.scrollWidth,
-  });
+  // Render the charts area off-screen at a fixed print-friendly width
+  // so axis ticks, legends, and section headings stay crisp and consistent
+  // regardless of the user's viewport width.
+  const PRINT_WIDTH = 1100; // px — roughly matches A4 content area at 2x
+  const clone = element.cloneNode(true) as HTMLElement;
+  const stage = document.createElement("div");
+  stage.style.position = "fixed";
+  stage.style.left = "-10000px";
+  stage.style.top = "0";
+  stage.style.width = `${PRINT_WIDTH}px`;
+  stage.style.background = "#ffffff";
+  stage.style.padding = "0";
+  stage.style.zIndex = "-1";
+  clone.style.width = `${PRINT_WIDTH}px`;
+  stage.appendChild(clone);
+  document.body.appendChild(stage);
+
+  // Allow Recharts ResponsiveContainer in the clone to lay out at the new width.
+  await new Promise((r) => setTimeout(r, 350));
+
+  let canvas: HTMLCanvasElement;
+  try {
+    canvas = await html2canvas(stage, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      logging: false,
+      windowWidth: PRINT_WIDTH,
+      width: PRINT_WIDTH,
+    });
+  } finally {
+    document.body.removeChild(stage);
+  }
 
   const pdf = new jsPDF({ unit: "pt", format: "a4", orientation: "portrait" });
   const pageWidth = pdf.internal.pageSize.getWidth();
