@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      menu_filter_presets: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          name: string
+          search_query: string | null
+          store_group: string | null
+          store_slug: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          search_query?: string | null
+          store_group?: string | null
+          store_slug?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          search_query?: string | null
+          store_group?: string | null
+          store_slug?: string | null
+        }
+        Relationships: []
+      }
       menu_items: {
         Row: {
           category: string | null
