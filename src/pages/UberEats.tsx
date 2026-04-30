@@ -481,6 +481,13 @@ export default function UberEats() {
                               {isItem ? "Item" : "Store"}
                             </Badge>
                           </TableCell>
+                          <TableCell className="w-72">
+                            <EditableUrlCell
+                              value={i.deep_link}
+                              placeholder="Add item deep link"
+                              onSave={(v) => updateItemDeepLink.mutateAsync({ id: i.id, url: v })}
+                            />
+                          </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
                               <Button asChild size="sm" variant="outline">
