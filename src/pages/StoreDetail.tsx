@@ -187,11 +187,41 @@ const TREND_RANGES: Array<{ key: string; label: string; months: number }> = [
   { key: "36m", label: "36M", months: 36 },
 ];
 
-function StoreReviewsTab({ storeId }: { storeId: string }) {
+function StoreReviewsTab({ storeId, store }: { storeId: string; store: any }) {
   const { data: stats } = useReviewStats(storeId);
   const { data: reviews, isLoading } = useReviews({ storeId, sortBy: "newest", limit: 100 });
   const [trendRange, setTrendRange] = useState("24m");
   const activeRange = TREND_RANGES.find((r) => r.key === trendRange) ?? TREND_RANGES[3];
+  const reportRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportPdf = async () => {
+    if (!reportRef.current) return;
+    try {
+      setExporting(true);
+      const { exportStoreReportPdf } = await import("@/lib/pdfReport");
+      await exportStoreReportPdf(reportRef.current, {
+        storeName: store?.name ?? "Store",
+        storeGroup: store?.store_group ?? null,
+        storeAddress: store?.address ?? null,
+        rangeLabel: `Last ${activeRange.months} months`,
+        kpis: stats
+          ? [
+              { label: "Total reviews", value: stats.total.toLocaleString() },
+              { label: "Avg rating", value: stats.avgStars.toFixed(2) },
+              { label: "Reply rate", value: `${Math.round(stats.responseRate * 100)}%` },
+              { label: "Last 30 days", value: stats.last30.toLocaleString() },
+            ]
+          : [],
+      });
+      toast.success("PDF report downloaded");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to generate PDF");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   if (stats && stats.total === 0) {
     return (
