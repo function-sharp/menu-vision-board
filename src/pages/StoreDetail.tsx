@@ -1,13 +1,17 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useStoreBySlug, useStoreItems } from "@/hooks/useDashboardData";
+import { useReviews, useReviewStats } from "@/hooks/useReviews";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ReviewCard } from "@/components/ReviewCard";
+import { Stars, StarDistribution } from "@/components/StarDistribution";
 import { formatZAR, decodeText } from "@/lib/format";
-import { ArrowLeft, Star, MapPin, Phone, Search, ExternalLink } from "lucide-react";
+import { ArrowLeft, Star, MapPin, Phone, Search, ExternalLink, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function StoreDetail() {
@@ -94,53 +98,68 @@ export default function StoreDetail() {
         </div>
       )}
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Search this menu..." value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
-      </div>
+      <Tabs defaultValue="menu" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="menu">Menu</TabsTrigger>
+          <TabsTrigger value="reviews">
+            <MessageSquare className="h-3.5 w-3.5 mr-1.5" /> Reviews
+          </TabsTrigger>
+        </TabsList>
 
-      {il ? (
-        <Skeleton className="h-96" />
-      ) : (
-        <Card>
-          <CardHeader><CardTitle className="text-base">Menu</CardTitle></CardHeader>
-          <CardContent>
-            <Accordion type="multiple" defaultValue={grouped.slice(0, 3).map((g) => g.category)}>
-              {grouped.map((g) => {
-                const prices = g.items.filter((i: any) => i.price != null).map((i: any) => Number(i.price));
-                const min = Math.min(...prices);
-                const max = Math.max(...prices);
-                return (
-                  <AccordionItem key={g.category} value={g.category}>
-                    <AccordionTrigger className="hover:no-underline">
-                      <div className="flex flex-1 items-center justify-between pr-3">
-                        <span className="font-medium text-left">{decodeText(g.category)}</span>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <span>{g.items.length} items</span>
-                          {prices.length > 0 && <span>{formatZAR(min)} – {formatZAR(max)}</span>}
-                        </div>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="space-y-2">
-                        {g.items.map((it: any) => (
-                          <div key={it.id} className="flex items-start justify-between gap-4 p-3 rounded-md hover:bg-muted/50">
-                            <div className="min-w-0 flex-1">
-                              <div className="font-medium text-sm">{decodeText(it.name)}</div>
-                              {it.description && <div className="text-xs text-muted-foreground mt-1 whitespace-pre-line">{decodeText(it.description)}</div>}
+        <TabsContent value="menu" className="space-y-4">
+          <div className="relative max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search this menu..." value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
+          </div>
+
+          {il ? (
+            <Skeleton className="h-96" />
+          ) : (
+            <Card>
+              <CardHeader><CardTitle className="text-base">Menu</CardTitle></CardHeader>
+              <CardContent>
+                <Accordion type="multiple" defaultValue={grouped.slice(0, 3).map((g) => g.category)}>
+                  {grouped.map((g) => {
+                    const prices = g.items.filter((i: any) => i.price != null).map((i: any) => Number(i.price));
+                    const min = Math.min(...prices);
+                    const max = Math.max(...prices);
+                    return (
+                      <AccordionItem key={g.category} value={g.category}>
+                        <AccordionTrigger className="hover:no-underline">
+                          <div className="flex flex-1 items-center justify-between pr-3">
+                            <span className="font-medium text-left">{decodeText(g.category)}</span>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              <span>{g.items.length} items</span>
+                              {prices.length > 0 && <span>{formatZAR(min)} – {formatZAR(max)}</span>}
                             </div>
-                            <div className="text-sm font-semibold text-primary whitespace-nowrap">{formatZAR(Number(it.price))}</div>
                           </div>
-                        ))}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                );
-              })}
-            </Accordion>
-          </CardContent>
-        </Card>
-      )}
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-2">
+                            {g.items.map((it: any) => (
+                              <div key={it.id} className="flex items-start justify-between gap-4 p-3 rounded-md hover:bg-muted/50">
+                                <div className="min-w-0 flex-1">
+                                  <div className="font-medium text-sm">{decodeText(it.name)}</div>
+                                  {it.description && <div className="text-xs text-muted-foreground mt-1 whitespace-pre-line">{decodeText(it.description)}</div>}
+                                </div>
+                                <div className="text-sm font-semibold text-primary whitespace-nowrap">{formatZAR(Number(it.price))}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    );
+                  })}
+                </Accordion>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="reviews">
+          <StoreReviewsTab storeId={store.id} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -154,5 +173,48 @@ function StatBox({ label, value, sub }: { label: string; value: string; sub?: st
         {sub && <div className="text-xs text-muted-foreground mt-1 truncate">{sub}</div>}
       </CardContent>
     </Card>
+  );
+}
+
+function StoreReviewsTab({ storeId }: { storeId: string }) {
+  const { data: stats } = useReviewStats(storeId);
+  const { data: reviews, isLoading } = useReviews({ storeId, sortBy: "newest", limit: 100 });
+
+  if (stats && stats.total === 0) {
+    return (
+      <Card>
+        <CardContent className="p-8 text-center text-muted-foreground">
+          No Google reviews linked to this store yet.
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4 space-y-2">
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">Average rating</div>
+            <div className="flex items-center gap-3">
+              <div className="text-3xl font-bold">{stats ? stats.avgStars.toFixed(2) : "—"}</div>
+              {stats && <Stars value={stats.avgStars} size={16} />}
+            </div>
+            <div className="text-xs text-muted-foreground">{stats?.total.toLocaleString() ?? 0} reviews</div>
+          </CardContent>
+        </Card>
+        <Card className="md:col-span-2">
+          <CardHeader className="pb-3"><CardTitle className="text-sm">Distribution</CardTitle></CardHeader>
+          <CardContent>{stats ? <StarDistribution distribution={stats.distribution} /> : <Skeleton className="h-24" />}</CardContent>
+        </Card>
+      </div>
+      {isLoading ? (
+        <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-32" />)}</div>
+      ) : (
+        <div className="grid gap-3">
+          {(reviews ?? []).map((r) => <ReviewCard key={r.id} review={r} />)}
+        </div>
+      )}
+    </div>
   );
 }

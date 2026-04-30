@@ -50,6 +50,156 @@ export type Database = {
         }
         Relationships: []
       }
+      google_places: {
+        Row: {
+          address: string | null
+          category_name: string | null
+          cid: string | null
+          city: string | null
+          country_code: string | null
+          created_at: string
+          fid: string | null
+          id: string
+          kgmid: string | null
+          last_synced_at: string | null
+          lat: number | null
+          lng: number | null
+          place_id: string
+          postal_code: string | null
+          reviews_count: number | null
+          store_id: string | null
+          title: string
+          total_score: number | null
+          url: string | null
+        }
+        Insert: {
+          address?: string | null
+          category_name?: string | null
+          cid?: string | null
+          city?: string | null
+          country_code?: string | null
+          created_at?: string
+          fid?: string | null
+          id?: string
+          kgmid?: string | null
+          last_synced_at?: string | null
+          lat?: number | null
+          lng?: number | null
+          place_id: string
+          postal_code?: string | null
+          reviews_count?: number | null
+          store_id?: string | null
+          title: string
+          total_score?: number | null
+          url?: string | null
+        }
+        Update: {
+          address?: string | null
+          category_name?: string | null
+          cid?: string | null
+          city?: string | null
+          country_code?: string | null
+          created_at?: string
+          fid?: string | null
+          id?: string
+          kgmid?: string | null
+          last_synced_at?: string | null
+          lat?: number | null
+          lng?: number | null
+          place_id?: string
+          postal_code?: string | null
+          reviews_count?: number | null
+          store_id?: string | null
+          title?: string
+          total_score?: number | null
+          url?: string | null
+        }
+        Relationships: []
+      }
+      google_reviews: {
+        Row: {
+          created_at: string
+          detailed_atmosphere: number | null
+          detailed_food: number | null
+          detailed_service: number | null
+          id: string
+          image_urls: string[] | null
+          is_local_guide: boolean | null
+          likes_count: number | null
+          original_language: string | null
+          place_id: string
+          publish_at_label: string | null
+          published_at: string | null
+          raw: Json | null
+          response_at: string | null
+          response_text: string | null
+          review_id: string
+          review_url: string | null
+          reviewer_id: string | null
+          reviewer_name: string | null
+          reviewer_photo_url: string | null
+          reviewer_review_count: number | null
+          stars: number | null
+          store_id: string | null
+          text: string | null
+          text_translated: string | null
+        }
+        Insert: {
+          created_at?: string
+          detailed_atmosphere?: number | null
+          detailed_food?: number | null
+          detailed_service?: number | null
+          id?: string
+          image_urls?: string[] | null
+          is_local_guide?: boolean | null
+          likes_count?: number | null
+          original_language?: string | null
+          place_id: string
+          publish_at_label?: string | null
+          published_at?: string | null
+          raw?: Json | null
+          response_at?: string | null
+          response_text?: string | null
+          review_id: string
+          review_url?: string | null
+          reviewer_id?: string | null
+          reviewer_name?: string | null
+          reviewer_photo_url?: string | null
+          reviewer_review_count?: number | null
+          stars?: number | null
+          store_id?: string | null
+          text?: string | null
+          text_translated?: string | null
+        }
+        Update: {
+          created_at?: string
+          detailed_atmosphere?: number | null
+          detailed_food?: number | null
+          detailed_service?: number | null
+          id?: string
+          image_urls?: string[] | null
+          is_local_guide?: boolean | null
+          likes_count?: number | null
+          original_language?: string | null
+          place_id?: string
+          publish_at_label?: string | null
+          published_at?: string | null
+          raw?: Json | null
+          response_at?: string | null
+          response_text?: string | null
+          review_id?: string
+          review_url?: string | null
+          reviewer_id?: string | null
+          reviewer_name?: string | null
+          reviewer_photo_url?: string | null
+          reviewer_review_count?: number | null
+          stars?: number | null
+          store_id?: string | null
+          text?: string | null
+          text_translated?: string | null
+        }
+        Relationships: []
+      }
       menu_filter_presets: {
         Row: {
           category: string | null
@@ -369,7 +519,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      match_store_for_place_title: {
+        Args: { p_title: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

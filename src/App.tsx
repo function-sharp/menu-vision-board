@@ -18,6 +18,7 @@ import Upload from "./pages/Upload";
 import Promotions from "./pages/Promotions";
 import UberEats from "./pages/UberEats";
 import ActivityLog from "./pages/ActivityLog";
+import Reviews from "./pages/Reviews";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 60_000 } } });
@@ -44,6 +45,7 @@ const App = () => (
                 <Route path="/uber-eats" element={<UberEats />} />
                 <Route path="/upload" element={<Upload />} />
                 <Route path="/activity" element={<ActivityLog />} />
+                <Route path="/reviews" element={<Reviews />} />
               </Route>
             </Route>
             <Route path="*" element={<NotFound />} />
