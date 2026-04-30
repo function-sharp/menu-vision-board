@@ -77,27 +77,66 @@ export async function exportStoreReportPdf(
   }
   pdf.setTextColor(0);
 
-  // ---- KPI strip ----
+  // ---- KPI summary table ----
   let cursorY = margin + 56;
   if (meta.kpis && meta.kpis.length > 0) {
-    const cols = Math.min(meta.kpis.length, 4);
-    const cellW = contentWidth / cols;
-    const cellH = 44;
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(11);
+    pdf.setTextColor(0);
+    pdf.text("KPI summary", margin, cursorY);
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(9);
+    pdf.setTextColor(110);
+    pdf.text(`Timeframe: ${meta.rangeLabel}`, margin, cursorY + 14);
+    pdf.setTextColor(0);
+    cursorY += 24;
+
+    const rowH = 22;
+    const labelColW = contentWidth * 0.55;
+    const tableTop = cursorY;
+    const rows = meta.kpis;
+    const tableH = rowH * (rows.length + 1);
+
+    // Header row fill
+    pdf.setFillColor(245, 245, 247);
+    pdf.rect(margin, tableTop, contentWidth, rowH, "F");
+
+    // Outer border
     pdf.setDrawColor(220);
     pdf.setLineWidth(0.5);
-    meta.kpis.slice(0, cols).forEach((k, i) => {
-      const x = margin + i * cellW;
-      pdf.roundedRect(x + 2, cursorY, cellW - 4, cellH, 4, 4);
+    pdf.rect(margin, tableTop, contentWidth, tableH);
+
+    // Header text
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(9);
+    pdf.setTextColor(80);
+    pdf.text("METRIC", margin + 10, tableTop + 14);
+    pdf.text("VALUE", margin + labelColW + 10, tableTop + 14);
+
+    // Body rows with zebra striping + separators
+    rows.forEach((k, i) => {
+      const y = tableTop + rowH * (i + 1);
+      if (i % 2 === 1) {
+        pdf.setFillColor(250, 250, 251);
+        pdf.rect(margin, y, contentWidth, rowH, "F");
+      }
+      pdf.setDrawColor(232);
+      pdf.line(margin, y, margin + contentWidth, y);
+
       pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(8);
-      pdf.setTextColor(110);
-      pdf.text(k.label.toUpperCase(), x + 10, cursorY + 14);
+      pdf.setFontSize(10);
+      pdf.setTextColor(60);
+      pdf.text(k.label, margin + 10, y + 14);
       pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(13);
       pdf.setTextColor(0);
-      pdf.text(k.value, x + 10, cursorY + 32);
+      pdf.text(k.value, margin + labelColW + 10, y + 14);
     });
-    cursorY += cellH + 16;
+
+    // Vertical column divider
+    pdf.setDrawColor(232);
+    pdf.line(margin + labelColW, tableTop, margin + labelColW, tableTop + tableH);
+
+    cursorY = tableTop + tableH + 18;
   }
 
   // ---- Charts image (paginated if needed) ----
