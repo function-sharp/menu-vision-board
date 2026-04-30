@@ -17,6 +17,7 @@ import { formatZAR, decodeText } from "@/lib/format";
 import { ExternalLink, Copy, Search, Download, Link2, AlertTriangle, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X, Loader2, Info } from "lucide-react";
 import { toast } from "sonner";
 import { SyncCenter } from "@/components/BulkScrapePanel";
+import { logActivity } from "@/lib/activityLog";
 import { StoreScrapeActions, ItemScrapeActions } from "@/components/ScrapeRowActions";
 
 function isValidUrl(value: string): boolean {
@@ -366,7 +367,7 @@ export default function UberEats() {
                           <EditableUrlCell
                             value={s.uber_eats_url}
                             placeholder="Add Uber Eats store URL"
-                            onSave={(v) => updateStoreUrl.mutateAsync({ id: s.id, url: v })}
+                            onSave={(v) => updateStoreUrl.mutateAsync({ id: s.id, url: v, name: s.name })}
                           />
                         </TableCell>
                         <TableCell className="text-right">
@@ -512,7 +513,7 @@ export default function UberEats() {
                             <EditableUrlCell
                               value={i.deep_link}
                               placeholder="Add item deep link"
-                              onSave={(v) => updateItemDeepLink.mutateAsync({ id: i.id, url: v })}
+                              onSave={(v) => updateItemDeepLink.mutateAsync({ id: i.id, url: v, name: i.name })}
                             />
                           </TableCell>
                           <TableCell className="text-right">
