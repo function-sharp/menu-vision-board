@@ -208,6 +208,7 @@ export function ComparisonPanel({
         storeName: `Store comparison (${selectedStores.length})`,
         storeGroup: selectedStores.map((s) => s.name).join(" · "),
         rangeLabel: `Last ${months} months`,
+        rangeMonths: months,
         kpis: [
           { label: "Stores compared", value: fmtInt(selectedStores.length) },
           { label: "Total reviews (across stores)", value: fmtInt(totalReviews) },

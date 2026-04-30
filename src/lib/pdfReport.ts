@@ -6,8 +6,22 @@ export interface StorePdfMeta {
   storeGroup?: string | null;
   storeAddress?: string | null;
   rangeLabel: string; // e.g. "Last 24 months"
+  /** Optional months covered by the report — used to compute formatted start/end dates. */
+  rangeMonths?: number;
   generatedAt?: Date;
   kpis?: Array<{ label: string; value: string }>;
+}
+
+/** Build a "Mon YYYY – Mon YYYY (N months)" label from a months window ending now. */
+export function formatRangeWindow(months: number, endDate: Date = new Date()): string {
+  const end = new Date(endDate);
+  const start = new Date(endDate);
+  start.setUTCDate(1);
+  start.setUTCHours(0, 0, 0, 0);
+  start.setUTCMonth(start.getUTCMonth() - (months - 1));
+  const fmt = (d: Date) =>
+    d.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+  return `${fmt(start)} – ${fmt(end)} (${months} month${months === 1 ? "" : "s"})`;
 }
 
 // ---- Shared KPI value formatters (used by callers for consistent display) ----
@@ -117,7 +131,10 @@ export async function exportStoreReportPdf(
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(9);
     pdf.setTextColor(110);
-    pdf.text(`Timeframe: ${meta.rangeLabel}`, margin, cursorY + 14);
+    const subTimeframe = meta.rangeMonths
+      ? `Timeframe: ${meta.rangeLabel} · ${formatRangeWindow(meta.rangeMonths, generatedAt)}`
+      : `Timeframe: ${meta.rangeLabel}`;
+    pdf.text(subTimeframe, margin, cursorY + 14);
     pdf.setTextColor(0);
     cursorY += 24;
 
@@ -127,7 +144,13 @@ export async function exportStoreReportPdf(
     const labelColW = contentWidth * 0.7;
     const valueColW = contentWidth - labelColW;
     const tableTop = cursorY;
-    const rows = meta.kpis;
+    // Prepend a clearly-formatted timeframe row so it sits inside the table
+    // alongside the other KPIs, not just as a sub-heading.
+    const timeframeRow = {
+      label: "Timeframe",
+      value: meta.rangeMonths ? formatRangeWindow(meta.rangeMonths, generatedAt) : meta.rangeLabel,
+    };
+    const rows = [timeframeRow, ...meta.kpis];
     const tableH = rowH * (rows.length + 1);
 
     // Header row fill
