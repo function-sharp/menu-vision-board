@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useStoreReviewStats } from "@/hooks/useReviews";
+import { useGooglePlaces, useStoreReviewStats } from "@/hooks/useReviews";
 import { useStores } from "@/hooks/useDashboardData";
 import { Stars } from "@/components/StarDistribution";
 import { ArrowDown, ArrowUp, ArrowUpDown, ExternalLink, Search } from "lucide-react";
+import { useScopedStoreIds, type ReviewScope, defaultScope } from "./ReviewFiltersBar";
 
 type SortKey = "name" | "group" | "reviews" | "avg_stars" | "reviews_30d" | "avg_30d" | "response_rate" | "avg_reply_days" | "last_review_at";
 
@@ -22,11 +23,14 @@ function compare(a: any, b: any, dir: "asc" | "desc") {
   return dir === "asc" ? cmp : -cmp;
 }
 
-export function StoresTab() {
+export function StoresTab({ scope = defaultScope }: { scope?: ReviewScope }) {
   const { data: stats, isLoading } = useStoreReviewStats();
   const { data: stores } = useStores();
+  const { data: places } = useGooglePlaces();
+  const { storeId: scopedStoreId, storeIds: scopedStoreIds } = useScopedStoreIds(scope);
   const [query, setQuery] = useState("");
   const [groupFilter, setGroupFilter] = useState<string>("all");
+  const [cityFilter, setCityFilter] = useState<string>("all");
   const [sortKey, setSortKey] = useState<SortKey>("reviews");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
@@ -34,6 +38,15 @@ export function StoresTab() {
     () => Array.from(new Set((stores ?? []).map((s) => s.store_group).filter(Boolean))) as string[],
     [stores],
   );
+  const cities = useMemo(
+    () => Array.from(new Set((places ?? []).map((p) => p.city).filter(Boolean))).sort() as string[],
+    [places],
+  );
+  const cityByStore = useMemo(() => {
+    const m = new Map<string, string | null>();
+    (places ?? []).forEach((p) => { if (p.store_id) m.set(p.store_id, p.city ?? null); });
+    return m;
+  }, [places]);
 
   const rows = useMemo(() => {
     if (!stats || !stores) return [];
@@ -42,13 +55,20 @@ export function StoresTab() {
       .filter((s) => storeMap.has(s.store_id))
       .map((s) => {
         const store = storeMap.get(s.store_id)!;
-        return { ...s, name: store.name, slug: store.slug, group: store.store_group };
+        return { ...s, name: store.name, slug: store.slug, group: store.store_group, city: cityByStore.get(s.store_id) ?? null };
       });
+    // Apply page-level scope first
+    if (scopedStoreId) rs = rs.filter((r) => r.store_id === scopedStoreId);
+    else if (scopedStoreIds && scopedStoreIds.length > 0) {
+      const set = new Set(scopedStoreIds);
+      rs = rs.filter((r) => set.has(r.store_id));
+    }
     if (query.trim()) {
       const q = query.toLowerCase();
-      rs = rs.filter((r) => r.name.toLowerCase().includes(q) || (r.group ?? "").toLowerCase().includes(q));
+      rs = rs.filter((r) => r.name.toLowerCase().includes(q) || (r.group ?? "").toLowerCase().includes(q) || (r.city ?? "").toLowerCase().includes(q));
     }
     if (groupFilter !== "all") rs = rs.filter((r) => r.group === groupFilter);
+    if (cityFilter !== "all") rs = rs.filter((r) => r.city === cityFilter);
     rs.sort((a, b) => {
       switch (sortKey) {
         case "name": return compare(a.name, b.name, sortDir);
@@ -63,7 +83,7 @@ export function StoresTab() {
       }
     });
     return rs;
-  }, [stats, stores, query, groupFilter, sortKey, sortDir]);
+  }, [stats, stores, cityByStore, query, groupFilter, cityFilter, sortKey, sortDir, scopedStoreId, scopedStoreIds]);
 
   const toggleSort = (k: SortKey) => {
     if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
