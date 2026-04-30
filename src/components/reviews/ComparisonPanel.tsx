@@ -177,6 +177,7 @@ export function ComparisonPanel({
     try {
       setExporting(true);
       const { exportStoreReportPdf } = await import("@/lib/pdfReport");
+      const months = (RANGES.find((r) => r.key === range) ?? RANGES[3]).months;
       const totalReviews = queries.reduce((acc, q) => acc + (q.data?.kpi.totalReviews ?? 0), 0);
       const ratedAvg = queries.reduce(
         (acc, q) => {
@@ -188,15 +189,33 @@ export function ComparisonPanel({
       );
       const avgAcross = ratedAvg.n ? ratedAvg.sum / ratedAvg.n : 0;
       const last30 = queries.reduce((acc, q) => acc + (q.data?.kpi.last30 ?? 0), 0);
+      const replyRates = queries
+        .map((q) => q.data?.kpi.replyRate)
+        .filter((v): v is number => typeof v === "number");
+      const avgReplyRate = replyRates.length ? replyRates.reduce((a, b) => a + b, 0) / replyRates.length : 0;
+
+      // Top performers
+      let topVolume = { name: "—", value: 0 };
+      let topRating = { name: "—", value: 0 };
+      selectedStores.forEach((s, i) => {
+        const k = queries[i].data?.kpi;
+        if (!k) return;
+        if (k.totalReviews > topVolume.value) topVolume = { name: s.name, value: k.totalReviews };
+        if (k.avgRating > topRating.value) topRating = { name: s.name, value: k.avgRating };
+      });
+
       await exportStoreReportPdf(reportRef.current, {
         storeName: `Store comparison (${selectedStores.length})`,
         storeGroup: selectedStores.map((s) => s.name).join(" · "),
-        rangeLabel: `Last ${(RANGES.find((r) => r.key === range) ?? RANGES[3]).months} months`,
+        rangeLabel: `Last ${months} months`,
         kpis: [
           { label: "Stores compared", value: String(selectedStores.length) },
-          { label: "Total reviews", value: totalReviews.toLocaleString() },
-          { label: "Avg rating", value: avgAcross.toFixed(2) },
-          { label: "Last 30 days", value: last30.toLocaleString() },
+          { label: "Total reviews (across stores)", value: totalReviews.toLocaleString() },
+          { label: "Weighted average rating", value: `${avgAcross.toFixed(2)} / 5` },
+          { label: "Average reply rate", value: `${Math.round(avgReplyRate * 100)}%` },
+          { label: "Reviews in last 30 days", value: last30.toLocaleString() },
+          { label: "Top store by volume", value: `${topVolume.name} (${topVolume.value.toLocaleString()})` },
+          { label: "Top store by rating", value: `${topRating.name} (${topRating.value.toFixed(2)})` },
         ],
       });
       toast.success("Comparison PDF downloaded");
