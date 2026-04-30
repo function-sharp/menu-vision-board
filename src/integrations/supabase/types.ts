@@ -52,6 +52,7 @@ export type Database = {
           deep_link: string | null
           description: string | null
           id: string
+          manually_edited_at: string | null
           name: string
           price: number | null
           store_id: string
@@ -63,6 +64,7 @@ export type Database = {
           deep_link?: string | null
           description?: string | null
           id?: string
+          manually_edited_at?: string | null
           name: string
           price?: number | null
           store_id: string
@@ -74,6 +76,7 @@ export type Database = {
           deep_link?: string | null
           description?: string | null
           id?: string
+          manually_edited_at?: string | null
           name?: string
           price?: number | null
           store_id?: string
@@ -215,6 +218,7 @@ export type Database = {
           cuisine: string | null
           id: string
           item_count: number
+          manually_edited_at: string | null
           name: string
           price_range: string | null
           rating: number | null
@@ -231,6 +235,7 @@ export type Database = {
           cuisine?: string | null
           id?: string
           item_count?: number
+          manually_edited_at?: string | null
           name: string
           price_range?: string | null
           rating?: number | null
@@ -247,6 +252,7 @@ export type Database = {
           cuisine?: string | null
           id?: string
           item_count?: number
+          manually_edited_at?: string | null
           name?: string
           price_range?: string | null
           rating?: number | null
@@ -256,6 +262,39 @@ export type Database = {
           store_url?: string | null
           telephone?: string | null
           uber_eats_url?: string | null
+        }
+        Relationships: []
+      }
+      sync_runs: {
+        Row: {
+          direction: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          source: string
+          started_at: string
+          status: string
+          summary: Json | null
+        }
+        Insert: {
+          direction: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          source: string
+          started_at?: string
+          status?: string
+          summary?: Json | null
+        }
+        Update: {
+          direction?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          source?: string
+          started_at?: string
+          status?: string
+          summary?: Json | null
         }
         Relationships: []
       }
