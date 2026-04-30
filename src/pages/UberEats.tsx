@@ -76,7 +76,10 @@ export default function UberEats() {
 
   const updateStoreUrl = useMutation({
     mutationFn: async ({ id, url }: { id: string; url: string | null }) => {
-      const { error } = await supabase.from("stores").update({ uber_eats_url: url }).eq("id", id);
+      const { error } = await supabase
+        .from("stores")
+        .update({ uber_eats_url: url, manually_edited_at: new Date().toISOString() })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -89,7 +92,10 @@ export default function UberEats() {
 
   const updateItemDeepLink = useMutation({
     mutationFn: async ({ id, url }: { id: string; url: string | null }) => {
-      const { error } = await supabase.from("menu_items").update({ deep_link: url }).eq("id", id);
+      const { error } = await supabase
+        .from("menu_items")
+        .update({ deep_link: url, manually_edited_at: new Date().toISOString() })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
