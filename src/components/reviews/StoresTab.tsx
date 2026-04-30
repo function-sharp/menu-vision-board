@@ -5,11 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useGooglePlaces, useStoreReviewStats } from "@/hooks/useReviews";
 import { useStores } from "@/hooks/useDashboardData";
 import { Stars } from "@/components/StarDistribution";
 import { ArrowDown, ArrowUp, ArrowUpDown, ExternalLink, Search } from "lucide-react";
 import { useScopedStoreIds, type ReviewScope, defaultScope } from "./ReviewFiltersBar";
+import { ComparisonPanel } from "./ComparisonPanel";
+import { toast } from "sonner";
+
+const MAX_COMPARE = 5;
 
 type SortKey = "name" | "group" | "reviews" | "avg_stars" | "reviews_30d" | "avg_30d" | "response_rate" | "avg_reply_days" | "last_review_at";
 
