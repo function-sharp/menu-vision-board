@@ -106,6 +106,7 @@ export default function MenuBrowser() {
       storeFilter: p.store_slug ?? "all",
       categoryFilter: p.category ?? "all",
       groupFilter: p.store_group ?? "all",
+      linkFilter: "all",
     });
     setPage(0);
     setActivePresetId(id);
