@@ -5,11 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useGooglePlaces, useStoreReviewStats } from "@/hooks/useReviews";
 import { useStores } from "@/hooks/useDashboardData";
 import { Stars } from "@/components/StarDistribution";
 import { ArrowDown, ArrowUp, ArrowUpDown, ExternalLink, Search } from "lucide-react";
 import { useScopedStoreIds, type ReviewScope, defaultScope } from "./ReviewFiltersBar";
+import { ComparisonPanel } from "./ComparisonPanel";
+import { toast } from "sonner";
+
+const MAX_COMPARE = 5;
 
 type SortKey = "name" | "group" | "reviews" | "avg_stars" | "reviews_30d" | "avg_30d" | "response_rate" | "avg_reply_days" | "last_review_at";
 
@@ -33,6 +38,19 @@ export function StoresTab({ scope = defaultScope }: { scope?: ReviewScope }) {
   const [cityFilter, setCityFilter] = useState<string>("all");
   const [sortKey, setSortKey] = useState<SortKey>("reviews");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [compareRange, setCompareRange] = useState<string>("24m");
+
+  const toggleSelect = (storeId: string) => {
+    setSelectedIds((prev) => {
+      if (prev.includes(storeId)) return prev.filter((id) => id !== storeId);
+      if (prev.length >= MAX_COMPARE) {
+        toast.info(`You can compare up to ${MAX_COMPARE} stores at once`);
+        return prev;
+      }
+      return [...prev, storeId];
+    });
+  };
 
   const groups = useMemo(
     () => Array.from(new Set((stores ?? []).map((s) => s.store_group).filter(Boolean))) as string[],
@@ -90,7 +108,24 @@ export function StoresTab({ scope = defaultScope }: { scope?: ReviewScope }) {
     else { setSortKey(k); setSortDir(k === "name" || k === "group" ? "asc" : "desc"); }
   };
 
+  const selectedStoreInfos = useMemo(() => {
+    const map = new Map((stores ?? []).map((s) => [s.id, s.name] as const));
+    return selectedIds
+      .filter((id) => map.has(id))
+      .map((id) => ({ id, name: map.get(id)! }));
+  }, [selectedIds, stores]);
+
   return (
+    <div className="space-y-4">
+      {selectedStoreInfos.length > 0 && (
+        <ComparisonPanel
+          selectedStores={selectedStoreInfos}
+          range={compareRange}
+          onRangeChange={setCompareRange}
+          onRemove={(id) => setSelectedIds((prev) => prev.filter((x) => x !== id))}
+          onClear={() => setSelectedIds([])}
+        />
+      )}
     <Card>
       <CardContent className="p-4 space-y-4">
         <div className="grid md:grid-cols-4 gap-3">
@@ -121,6 +156,7 @@ export function StoresTab({ scope = defaultScope }: { scope?: ReviewScope }) {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10"><span className="sr-only">Compare</span></TableHead>
                   <SortHead label="Store" k="name" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
                   <SortHead label="Group" k="group" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
                   <TableHead>City</TableHead>
@@ -137,13 +173,24 @@ export function StoresTab({ scope = defaultScope }: { scope?: ReviewScope }) {
               <TableBody>
                 {rows.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={11} className="text-center text-sm text-muted-foreground py-8">
+                    <TableCell colSpan={12} className="text-center text-sm text-muted-foreground py-8">
                       No stores match.
                     </TableCell>
                   </TableRow>
                 )}
-                {rows.map((r) => (
-                  <TableRow key={r.store_id}>
+                {rows.map((r) => {
+                  const checked = selectedIds.includes(r.store_id);
+                  const disabled = !checked && selectedIds.length >= MAX_COMPARE;
+                  return (
+                  <TableRow key={r.store_id} className={checked ? "bg-primary/5" : ""}>
+                    <TableCell className="w-10">
+                      <Checkbox
+                        checked={checked}
+                        disabled={disabled}
+                        onCheckedChange={() => toggleSelect(r.store_id)}
+                        aria-label={`Compare ${r.name}`}
+                      />
+                    </TableCell>
                     <TableCell>
                       <Link to={`/stores/${r.slug}`} className="font-medium hover:text-primary hover:underline">
                         {r.name}
@@ -171,13 +218,15 @@ export function StoresTab({ scope = defaultScope }: { scope?: ReviewScope }) {
                       </Link>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
         )}
       </CardContent>
     </Card>
+    </div>
   );
 }
 
