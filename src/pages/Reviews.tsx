@@ -1,57 +1,22 @@
-import { useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { useGooglePlaces, useReviews, useReviewStats, useSyncReviews, type ReviewFilters } from "@/hooks/useReviews";
-import { useStores } from "@/hooks/useDashboardData";
-import { ReviewCard } from "@/components/ReviewCard";
-import { Stars, StarDistribution } from "@/components/StarDistribution";
-import { Search, RefreshCw, Download, MessageSquare, Star, CalendarClock, ReplyAll } from "lucide-react";
-import { toast } from "sonner";
-
-function csvEscape(v: unknown): string {
-  if (v == null) return "";
-  const s = String(v).replace(/"/g, '""');
-  return /[",\n]/.test(s) ? `"${s}"` : s;
-}
+import { useGooglePlaces, useSyncReviews } from "@/hooks/useReviews";
+import { MessageSquare, RefreshCw, BarChart3, Store, ListFilter, Sparkles, Link2 } from "lucide-react";
+import { OverviewTab } from "@/components/reviews/OverviewTab";
+import { StoresTab } from "@/components/reviews/StoresTab";
+import { ReviewsListTab } from "@/components/reviews/ReviewsListTab";
+import { InsightsTab } from "@/components/reviews/InsightsTab";
+import { ManageLinksTab } from "@/components/reviews/ManageLinksTab";
 
 export default function Reviews() {
-  const { data: stores } = useStores();
   const { data: places } = useGooglePlaces();
   const sync = useSyncReviews();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [storeId, setStoreId] = useState<string | "all">("all");
-  const [stars, setStars] = useState<string>("all");
-  const [responseFilter, setResponseFilter] = useState<"all" | "with" | "without">("all");
-  const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState<NonNullable<ReviewFilters["sortBy"]>>("newest");
-
-  const filters: ReviewFilters = {
-    storeId: storeId === "all" ? null : storeId,
-    stars: stars === "all" ? null : Number(stars),
-    hasText: false,
-    hasResponse: responseFilter === "with" ? true : false,
-    search,
-    sortBy,
-    limit: 200,
-  };
-  const { data: reviews, isLoading } = useReviews(filters);
-  const { data: stats } = useReviewStats(filters.storeId);
-
-  const storeName = useMemo(() => {
-    const map = new Map<string, string>();
-    stores?.forEach((s) => map.set(s.id, s.name));
-    return (id: string | null) => (id ? map.get(id) ?? null : null);
-  }, [stores]);
-
-  const filteredReviews = useMemo(() => {
-    if (!reviews) return [];
-    if (responseFilter === "without") return reviews.filter((r) => !r.response_text);
-    return reviews;
-  }, [reviews, responseFilter]);
+  // Auto-jump to "list" tab when a focus param is present (from Global Search)
+  const initialTab = searchParams.get("tab") ?? (searchParams.get("focus") ? "list" : "overview");
 
   const lastSync = useMemo(() => {
     if (!places || !places.length) return null;
@@ -60,34 +25,10 @@ export default function Reviews() {
     return new Date(Math.max(...dates.map((d) => new Date(d).getTime())));
   }, [places]);
 
-  const handleExport = () => {
-    if (!filteredReviews.length) {
-      toast.info("Nothing to export");
-      return;
-    }
-    const headers = ["published_at", "store", "stars", "reviewer", "text", "response", "likes", "url"];
-    const lines = [headers.join(",")];
-    for (const r of filteredReviews) {
-      lines.push(
-        [
-          r.published_at ?? "",
-          storeName(r.store_id) ?? "",
-          r.stars ?? "",
-          r.reviewer_name ?? "",
-          r.text ?? "",
-          r.response_text ?? "",
-          r.likes_count ?? 0,
-          r.review_url ?? "",
-        ].map(csvEscape).join(","),
-      );
-    }
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `google-reviews-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const setTab = (val: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", val);
+    setSearchParams(next, { replace: true });
   };
 
   return (
@@ -103,9 +44,6 @@ export default function Reviews() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" /> Export CSV
-          </Button>
           <Button size="sm" onClick={() => sync.mutate()} disabled={sync.isPending}>
             <RefreshCw className={`h-4 w-4 mr-2 ${sync.isPending ? "animate-spin" : ""}`} />
             {sync.isPending ? "Syncing..." : "Sync from Google"}
@@ -113,161 +51,21 @@ export default function Reviews() {
         </div>
       </div>
 
-      {/* KPI cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <KpiCard
-          icon={<MessageSquare className="h-4 w-4" />}
-          label="Total reviews"
-          value={stats ? stats.total.toLocaleString() : "—"}
-        />
-        <KpiCard
-          icon={<Star className="h-4 w-4" />}
-          label="Average rating"
-          value={stats ? stats.avgStars.toFixed(2) : "—"}
-          extra={stats ? <Stars value={stats.avgStars} size={12} /> : null}
-        />
-        <KpiCard
-          icon={<ReplyAll className="h-4 w-4" />}
-          label="Owner response"
-          value={stats ? `${Math.round(stats.responseRate * 100)}%` : "—"}
-        />
-        <KpiCard
-          icon={<CalendarClock className="h-4 w-4" />}
-          label="Last 30 days"
-          value={stats ? stats.last30.toLocaleString() : "—"}
-        />
-      </div>
+      <Tabs value={initialTab} onValueChange={setTab} className="space-y-4">
+        <TabsList className="flex-wrap h-auto">
+          <TabsTrigger value="overview"><BarChart3 className="h-3.5 w-3.5 mr-1.5" /> Overview</TabsTrigger>
+          <TabsTrigger value="stores"><Store className="h-3.5 w-3.5 mr-1.5" /> Stores</TabsTrigger>
+          <TabsTrigger value="list"><ListFilter className="h-3.5 w-3.5 mr-1.5" /> Reviews</TabsTrigger>
+          <TabsTrigger value="insights"><Sparkles className="h-3.5 w-3.5 mr-1.5" /> AI Insights</TabsTrigger>
+          <TabsTrigger value="links"><Link2 className="h-3.5 w-3.5 mr-1.5" /> Manage Links</TabsTrigger>
+        </TabsList>
 
-      {/* Distribution + sub-ratings */}
-      <div className="grid lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-2">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Rating distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {stats ? <StarDistribution distribution={stats.distribution} /> : <Skeleton className="h-32" />}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Detailed averages</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {stats ? (
-              <>
-                <SubAvg label="Food" value={stats.avgFood} />
-                <SubAvg label="Service" value={stats.avgService} />
-                <SubAvg label="Atmosphere" value={stats.avgAtmosphere} />
-              </>
-            ) : (
-              <Skeleton className="h-24" />
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-4 space-y-3">
-          <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-3">
-            <div className="relative lg:col-span-2">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search reviews, reviewer name…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <Select value={storeId} onValueChange={(v) => setStoreId(v as any)}>
-              <SelectTrigger><SelectValue placeholder="Store" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All stores</SelectItem>
-                {(stores ?? []).filter((s) => places?.some((p) => p.store_id === s.id)).map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={stars} onValueChange={setStars}>
-              <SelectTrigger><SelectValue placeholder="Stars" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All stars</SelectItem>
-                {[5, 4, 3, 2, 1].map((n) => (
-                  <SelectItem key={n} value={String(n)}>{n} star{n > 1 ? "s" : ""}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-              <SelectTrigger><SelectValue placeholder="Sort" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="newest">Newest first</SelectItem>
-                <SelectItem value="oldest">Oldest first</SelectItem>
-                <SelectItem value="highest">Highest rated</SelectItem>
-                <SelectItem value="lowest">Lowest rated</SelectItem>
-                <SelectItem value="likes">Most liked</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-muted-foreground">Owner response:</span>
-            {(["all", "with", "without"] as const).map((opt) => (
-              <Badge
-                key={opt}
-                variant={responseFilter === opt ? "default" : "outline"}
-                className="cursor-pointer"
-                onClick={() => setResponseFilter(opt)}
-              >
-                {opt === "all" ? "All" : opt === "with" ? "With reply" : "No reply"}
-              </Badge>
-            ))}
-            <span className="ml-auto text-xs text-muted-foreground">
-              Showing {filteredReviews.length}
-            </span>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Reviews list */}
-      {isLoading ? (
-        <div className="space-y-3">
-          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32" />)}
-        </div>
-      ) : filteredReviews.length === 0 ? (
-        <Card><CardContent className="p-8 text-center text-muted-foreground">No reviews match your filters.</CardContent></Card>
-      ) : (
-        <div className="grid gap-3">
-          {filteredReviews.map((r) => (
-            <ReviewCard key={r.id} review={r} storeName={storeName(r.store_id)} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function KpiCard({ icon, label, value, extra }: { icon: React.ReactNode; label: string; value: string; extra?: React.ReactNode }) {
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between text-muted-foreground text-xs uppercase tracking-wide">
-          <span>{label}</span>
-          {icon}
-        </div>
-        <div className="text-2xl font-bold mt-2">{value}</div>
-        {extra && <div className="mt-1">{extra}</div>}
-      </CardContent>
-    </Card>
-  );
-}
-
-function SubAvg({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <div className="flex items-center gap-2">
-        <Stars value={value} size={12} />
-        <span className="text-sm font-medium tabular-nums w-10 text-right">{value ? value.toFixed(2) : "—"}</span>
-      </div>
+        <TabsContent value="overview"><OverviewTab /></TabsContent>
+        <TabsContent value="stores"><StoresTab /></TabsContent>
+        <TabsContent value="list"><ReviewsListTab /></TabsContent>
+        <TabsContent value="insights"><InsightsTab /></TabsContent>
+        <TabsContent value="links"><ManageLinksTab /></TabsContent>
+      </Tabs>
     </div>
   );
 }
