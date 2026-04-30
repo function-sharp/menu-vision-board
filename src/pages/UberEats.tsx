@@ -270,7 +270,7 @@ export default function UberEats() {
         </span>
       </div>
 
-      <BulkScrapePanel stores={stores ?? []} items={items ?? []} />
+      <SyncCenter stores={stores ?? []} items={items ?? []} />
 
       {/* Stores section */}
       <Card>
