@@ -173,13 +173,24 @@ export function StoresTab({ scope = defaultScope }: { scope?: ReviewScope }) {
               <TableBody>
                 {rows.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={11} className="text-center text-sm text-muted-foreground py-8">
+                    <TableCell colSpan={12} className="text-center text-sm text-muted-foreground py-8">
                       No stores match.
                     </TableCell>
                   </TableRow>
                 )}
-                {rows.map((r) => (
-                  <TableRow key={r.store_id}>
+                {rows.map((r) => {
+                  const checked = selectedIds.includes(r.store_id);
+                  const disabled = !checked && selectedIds.length >= MAX_COMPARE;
+                  return (
+                  <TableRow key={r.store_id} className={checked ? "bg-primary/5" : ""}>
+                    <TableCell className="w-10">
+                      <Checkbox
+                        checked={checked}
+                        disabled={disabled}
+                        onCheckedChange={() => toggleSelect(r.store_id)}
+                        aria-label={`Compare ${r.name}`}
+                      />
+                    </TableCell>
                     <TableCell>
                       <Link to={`/stores/${r.slug}`} className="font-medium hover:text-primary hover:underline">
                         {r.name}
