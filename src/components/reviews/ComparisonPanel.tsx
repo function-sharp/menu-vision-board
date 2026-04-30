@@ -1,5 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useQueries } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +17,7 @@ import {
   Legend,
 } from "recharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { X } from "lucide-react";
+import { X, Download } from "lucide-react";
 
 const RANGES: Array<{ key: string; label: string; months: number }> = [
   { key: "3m", label: "3M", months: 3 },
@@ -163,6 +164,50 @@ export function ComparisonPanel({
     });
   }, [allReady, queries, selectedStores]);
 
+  const reportRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
+  const rangeLabel = (RANGES.find((r) => r.key === range) ?? RANGES[3]).label;
+
+  const handleExportPdf = async () => {
+    if (!reportRef.current) return;
+    if (!allReady) {
+      toast.info("Wait for data to finish loading");
+      return;
+    }
+    try {
+      setExporting(true);
+      const { exportStoreReportPdf } = await import("@/lib/pdfReport");
+      const totalReviews = queries.reduce((acc, q) => acc + (q.data?.kpi.totalReviews ?? 0), 0);
+      const ratedAvg = queries.reduce(
+        (acc, q) => {
+          const k = q.data?.kpi;
+          if (!k || !k.totalReviews) return acc;
+          return { sum: acc.sum + k.avgRating * k.totalReviews, n: acc.n + k.totalReviews };
+        },
+        { sum: 0, n: 0 },
+      );
+      const avgAcross = ratedAvg.n ? ratedAvg.sum / ratedAvg.n : 0;
+      const last30 = queries.reduce((acc, q) => acc + (q.data?.kpi.last30 ?? 0), 0);
+      await exportStoreReportPdf(reportRef.current, {
+        storeName: `Store comparison (${selectedStores.length})`,
+        storeGroup: selectedStores.map((s) => s.name).join(" · "),
+        rangeLabel: `Last ${(RANGES.find((r) => r.key === range) ?? RANGES[3]).months} months`,
+        kpis: [
+          { label: "Stores compared", value: String(selectedStores.length) },
+          { label: "Total reviews", value: totalReviews.toLocaleString() },
+          { label: "Avg rating", value: avgAcross.toFixed(2) },
+          { label: "Last 30 days", value: last30.toLocaleString() },
+        ],
+      });
+      toast.success("Comparison PDF downloaded");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to generate PDF");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (selectedStores.length === 0) return null;
 
   return (
@@ -207,10 +252,20 @@ export function ComparisonPanel({
           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={onClear}>
             Clear all
           </Button>
+          <Button
+            variant="default"
+            size="sm"
+            className="h-7 px-2.5 text-xs"
+            onClick={handleExportPdf}
+            disabled={exporting || !allReady}
+          >
+            <Download className="h-3 w-3 mr-1" />
+            {exporting ? "Generating..." : "Export PDF"}
+          </Button>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-5">
+      <CardContent ref={reportRef} className="space-y-5">
         {/* KPI table */}
         <div className="overflow-x-auto rounded-md border">
           <Table>
