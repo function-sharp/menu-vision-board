@@ -350,11 +350,11 @@ export default function UberEats() {
               <Input
                 placeholder="Search items..."
                 value={itemQuery}
-                onChange={(e) => { setItemQuery(e.target.value); setItemsShown(PAGE_SIZE); }}
+                onChange={(e) => { setItemQuery(e.target.value); setItemPage(0); }}
                 className="pl-9"
               />
             </div>
-            <Select value={itemStoreFilter} onValueChange={(v) => { setItemStoreFilter(v); setItemsShown(PAGE_SIZE); }}>
+            <Select value={itemStoreFilter} onValueChange={(v) => { setItemStoreFilter(v); setItemPage(0); }}>
               <SelectTrigger><SelectValue placeholder="Store" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All stores</SelectItem>
@@ -363,7 +363,7 @@ export default function UberEats() {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={linkFilter} onValueChange={(v) => { setLinkFilter(v as ItemLinkFilter); setItemsShown(PAGE_SIZE); }}>
+            <Select value={linkFilter} onValueChange={(v) => { setLinkFilter(v as ItemLinkFilter); setItemPage(0); }}>
               <SelectTrigger><SelectValue placeholder="Link type" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="any">Any link</SelectItem>
@@ -380,77 +380,89 @@ export default function UberEats() {
           {itemsLoading ? (
             <Skeleton className="h-96" />
           ) : (
-            <div className="overflow-x-auto rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Store</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead className="text-right">Price</TableHead>
-                    <TableHead>Link</TableHead>
-                    <TableHead className="text-right w-40">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {visibleItems.length === 0 && (
+            <>
+              <div className="overflow-x-auto rounded-md border">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">
-                        No items match these filters.
-                      </TableCell>
+                      <TableHead>
+                        <SortHeader label="Item" active={itemSortKey === "name"} dir={itemSortDir} onClick={() => toggleItemSort("name")} />
+                      </TableHead>
+                      <TableHead>
+                        <SortHeader label="Store" active={itemSortKey === "store"} dir={itemSortDir} onClick={() => toggleItemSort("store")} />
+                      </TableHead>
+                      <TableHead>
+                        <SortHeader label="Category" active={itemSortKey === "category"} dir={itemSortDir} onClick={() => toggleItemSort("category")} />
+                      </TableHead>
+                      <TableHead className="text-right">
+                        <SortHeader label="Price" align="right" active={itemSortKey === "price"} dir={itemSortDir} onClick={() => toggleItemSort("price")} />
+                      </TableHead>
+                      <TableHead>
+                        <SortHeader label="Link" active={itemSortKey === "link"} dir={itemSortDir} onClick={() => toggleItemSort("link")} />
+                      </TableHead>
+                      <TableHead className="text-right w-40">Actions</TableHead>
                     </TableRow>
-                  )}
-                  {visibleItems.map((i) => {
-                    const url = i.deep_link ?? i.stores.uber_eats_url!;
-                    const isItem = !!i.deep_link;
-                    return (
-                      <TableRow key={i.id}>
-                        <TableCell className="max-w-xs">
-                          <div className="font-medium text-sm">{decodeText(i.name)}</div>
-                          {i.description && (
-                            <div className="text-xs text-muted-foreground line-clamp-1">{decodeText(i.description)}</div>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Link to={`/stores/${i.stores.slug}`} className="text-sm hover:text-primary hover:underline">
-                            {i.stores.name}
-                          </Link>
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{decodeText(i.category ?? "")}</TableCell>
-                        <TableCell className="text-right font-semibold whitespace-nowrap">
-                          {i.price != null ? formatZAR(Number(i.price)) : "—"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={isItem ? "default" : "secondary"} className="text-xs">
-                            {isItem ? "Item" : "Store"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button asChild size="sm" variant="outline">
-                              <a href={url} target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open
-                              </a>
-                            </Button>
-                            <Button size="sm" variant="ghost" onClick={() => copyUrl(url)}>
-                              <Copy className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
+                  </TableHeader>
+                  <TableBody>
+                    {pagedItems.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">
+                          No items match these filters.
                         </TableCell>
                       </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-
-          {itemsShown < filteredItems.length && (
-            <div className="flex justify-center">
-              <Button variant="outline" size="sm" onClick={() => setItemsShown((n) => n + PAGE_SIZE)}>
-                Load more ({filteredItems.length - itemsShown} remaining)
-              </Button>
-            </div>
+                    )}
+                    {pagedItems.map((i) => {
+                      const url = i.deep_link ?? i.stores.uber_eats_url!;
+                      const isItem = !!i.deep_link;
+                      return (
+                        <TableRow key={i.id}>
+                          <TableCell className="max-w-xs">
+                            <div className="font-medium text-sm">{decodeText(i.name)}</div>
+                            {i.description && (
+                              <div className="text-xs text-muted-foreground line-clamp-1">{decodeText(i.description)}</div>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Link to={`/stores/${i.stores.slug}`} className="text-sm hover:text-primary hover:underline">
+                              {i.stores.name}
+                            </Link>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{decodeText(i.category ?? "")}</TableCell>
+                          <TableCell className="text-right font-semibold whitespace-nowrap">
+                            {i.price != null ? formatZAR(Number(i.price)) : "—"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={isItem ? "default" : "secondary"} className="text-xs">
+                              {isItem ? "Item" : "Store"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1">
+                              <Button asChild size="sm" variant="outline">
+                                <a href={url} target="_blank" rel="noopener noreferrer">
+                                  <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open
+                                </a>
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => copyUrl(url)}>
+                                <Copy className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+              <PaginationBar
+                page={safeItemPage}
+                totalPages={itemTotalPages}
+                pageSize={itemPageSize}
+                totalRows={filteredItems.length}
+                onPageChange={setItemPage}
+                onPageSizeChange={(n) => { setItemPageSize(n); setItemPage(0); }}
+              />
+            </>
           )}
         </CardContent>
       </Card>
