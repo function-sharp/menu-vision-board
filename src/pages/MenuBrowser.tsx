@@ -45,6 +45,7 @@ export default function MenuBrowser() {
   const [saveOpen, setSaveOpen] = useState(false);
   const [presetName, setPresetName] = useState("");
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
+  const [selectedItem, setSelectedItem] = useState<any | null>(null);
 
   const updateFilter = (patch: Partial<Filters>) => {
     setFilters((f) => ({ ...f, ...patch }));
