@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatZAR, decodeText } from "@/lib/format";
-import { ExternalLink, Copy, Search, Download, Link2, AlertTriangle } from "lucide-react";
+import { ExternalLink, Copy, Search, Download, Link2, AlertTriangle, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 
 type ItemLinkFilter = "any" | "item" | "store_fallback";
