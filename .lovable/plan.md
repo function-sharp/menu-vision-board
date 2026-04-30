@@ -1,86 +1,50 @@
-# Col'Cacchio Menu Dashboard
+## Plan: Link Col'Cacchio OS (Airtable)
 
-An internal dashboard to explore 23 stores and ~2,780 menu items, with the ability to refresh data anytime by uploading a new Excel export.
+Airtable is connected. Base **Col'Cacchio OS** has two tables we'll use:
+- **Stores** — Store name, Group, `Uber Eats URL (from Master Store)`
+- **Promotion Tracker** — 20 fields (theme, dates, mechanic, status, priority, approvals, etc.)
 
-## Pages & navigation
+Sync is **manual only** — triggered from the Excel upload page and a new "Sync from Airtable" button. No schedule.
 
-App shell with a left sidebar (collapsible) and top header showing total stores / items and a "Refresh data" button.
+### 1. Database changes
 
-```text
-┌─ Sidebar ──────────────┐  ┌─ Header: Stats + Upload Excel ──┐
-│ Overview               │  │                                  │
-│ Stores                 │  │  Active page                     │
-│ Menu Browser           │  │                                  │
-│ Item Comparison        │  │                                  │
-│ Categories & Pricing   │  │                                  │
-│ Data Upload            │  │                                  │
-└────────────────────────┘  └──────────────────────────────────┘
-```
+Add to `stores`:
+- `uber_eats_url text`
 
-### 1. Overview (home)
-- KPI cards: total stores, total items, avg items/store, avg price, Classic vs GO split
-- Bar chart: items per store (sorted)
-- Bar chart: top 10 categories by item count
-- Histogram: price distribution
-- Table: stores by rating
+New table `promotions` (mirrors Airtable, refreshed on each sync):
+- `id uuid pk`, `airtable_id text unique`, `promo_id text`, `month text`, `week text`,
+  `start_date date`, `end_date date`, `theme text[]`, `store_group text`,
+  `offer_type text`, `messaging text`, `mechanic text`, `recommended_items text[]`,
+  `audience text`, `funding_split text`, `status text`, `rationale text`,
+  `margin_check text`, `priority text`, `marketing_approval text`,
+  `operations_approval text`, `synced_at timestamptz default now()`
 
-### 2. Stores (directory)
-- Sortable/filterable card grid: name, group (Classic/GO), rating + count, address, phone (click-to-call), price range ($$), item count
-- Filter by group, search by name/address
-- Click a card → Per-store menu page
+Public RLS (read/insert/update/delete) — matches existing pattern.
 
-### 3. Per-store menu page (`/stores/:slug`)
-- Header: store name, group badge, rating, address, phone, cuisine tags, item count, avg price
-- Category accordion: each category shows item count + price range; expanded list shows item name, description, price (ZAR formatted), with HTML entities (`&amp;`) decoded
-- Search within store, sort by price/name
-- Mini-stats: cheapest/most expensive item, category breakdown chart
+Extend `uploads.note` usage to log Airtable syncs (or add `source text` column with default `'excel'`).
 
-### 4. Menu Browser (all items)
-- Powerful searchable/sortable table of all 2,780 items: store, category, item, description, price
-- Filters: store (multi), category (multi), price range slider, group
-- Pagination (50/page) + CSV export of current view
+### 2. Edge function: `sync-airtable`
 
-### 5. Item Comparison
-- Search box for an item name (e.g. "Margherita") with fuzzy matching
-- Results table: one row per store offering it, with price, category, and a price chart across stores
-- Highlights cheapest / most expensive store and price spread
+- Calls `https://connector-gateway.lovable.dev/airtable/v0/appGQEVbE8o5NRK1K/...` using `LOVABLE_API_KEY` + `AIRTABLE_API_KEY`.
+- Fetches **Stores** → matches by normalised store name (strip punctuation/case) against `stores.name` → updates `uber_eats_url`. Returns list of unmatched Airtable rows for visibility.
+- Fetches **Promotion Tracker** → upserts into `promotions` keyed on `airtable_id`. Deletes rows whose `airtable_id` no longer exists.
+- Returns `{ stores_updated, stores_unmatched, promotions_upserted, promotions_removed }`.
+- Logs a row into `uploads` with source `airtable`.
 
-### 6. Categories & Pricing analytics
-- Avg/min/max price by category (bar)
-- Avg price by store, Classic vs GO comparison
-- Category presence matrix: stores × top categories (heatmap-style table)
-- Price distribution box-style summary per group
+### 3. Frontend
 
-### 7. Data Upload
-- Drag-and-drop `.xlsx` upload, parsed in the browser (SheetJS)
-- Validates required columns from the `All Items` sheet
-- Replaces current data in the database, shows row counts and any skipped rows
-- Shows last upload timestamp + uploader-supplied note
+**Upload page** — add a second card "Sync from Airtable (Col'Cacchio OS)" with a Sync button, last-sync timestamp, and a results panel showing counts + any unmatched store names.
 
-## Data handling
+**Stores list & StoreDetail** — when `uber_eats_url` is present, show an "Order on Uber Eats" button (opens in new tab). Also surface it as a small badge on store cards.
 
-- Lovable Cloud (Supabase) stores two tables:
-  - `stores` — name, slug, group, cuisine, rating, rating_count, telephone, address, price_range, store_url, item_count
-  - `menu_items` — store_id, category, name, description, price, currency, deep_link
-- An `uploads` table tracks each refresh (timestamp, row count, note)
-- Public read access (RLS allows anon select); writes restricted to a server-side edge function called by the upload page
-- HTML entity decoding (`&amp;`, smart quotes) applied at import
+**New page `/promotions`** (added to sidebar as "Promotions"):
+- KPI strip: total promos, active this month, awaiting approval, by store group.
+- Table with filters: Month, Store Group, Status, Priority, Offer Type.
+- Row expands to show full mechanic / messaging / rationale / approvals.
+- Empty state prompts user to run an Airtable sync.
 
-## Access
-
-- No login. Anyone with the link can view and upload. (Can add auth later.)
-
-## Design
-
-- Clean light theme, Col'Cacchio-friendly accent (warm red/tomato) on dark text, generous spacing, shadcn cards/tables/charts (Recharts)
-- Fully responsive; tables become stacked cards on mobile
-- Currency formatted as `R 459` (ZAR)
-- Empty/loading skeletons on every data view
-
-## Technical notes
-
-- Stack: React + Vite + Tailwind + shadcn + Recharts + Lovable Cloud
-- Initial seed: parse the uploaded `colcacchio_output_1.xlsx` once via an edge function and insert into `stores` + `menu_items` so the dashboard is populated on first load
-- Excel parsing on client uses `xlsx` (SheetJS); rows posted to an `ingest-menu` edge function in chunks
-- Slugs generated from store names for stable URLs
-- All charts use Recharts; tables use shadcn `Table` with TanStack-style sort/filter helpers
+### Technical notes
+- Store-name matching: normalise both sides (lowercase, remove `'`, `,`, `–`, "GO", extra whitespace) and fall back to fuzzy contains. Surface unmatched in UI so we can fix names manually.
+- Airtable rich text (`mechanic`, `messaging`, etc.) stored as plain markdown text; rendered with `whitespace-pre-wrap`.
+- All Airtable calls live server-side in the edge function — frontend just invokes it via `supabase.functions.invoke('sync-airtable')`.
+- No scheduled cron; sync runs only from the button click (and conceptually after an Excel upload, but it stays a separate explicit action).

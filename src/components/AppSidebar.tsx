@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Store, Utensils, GitCompare, BarChart3, Upload, Pizza } from "lucide-react";
+import { LayoutDashboard, Store, Utensils, GitCompare, BarChart3, Upload, Pizza, Megaphone } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -19,6 +19,7 @@ const items = [
   { title: "Menu Browser", url: "/menu", icon: Utensils },
   { title: "Item Comparison", url: "/compare", icon: GitCompare },
   { title: "Categories & Pricing", url: "/analytics", icon: BarChart3 },
+  { title: "Promotions", url: "/promotions", icon: Megaphone },
   { title: "Data Upload", url: "/upload", icon: Upload },
 ];
 

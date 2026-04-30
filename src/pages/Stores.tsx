@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStores } from "@/hooks/useDashboardData";
-import { Star, MapPin, Phone, Search } from "lucide-react";
+import { Star, MapPin, Phone, Search, ExternalLink } from "lucide-react";
 
 export default function Stores() {
   const { data: stores, isLoading } = useStores();
@@ -94,6 +94,17 @@ export default function Stores() {
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Phone className="h-3.5 w-3.5" /> +{s.telephone}
                     </div>
+                  )}
+                  {s.uber_eats_url && (
+                    <a
+                      href={s.uber_eats_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" /> Order on Uber Eats
+                    </a>
                   )}
                 </CardContent>
               </Card>

@@ -6,21 +6,46 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload as UploadIcon, FileSpreadsheet, CheckCircle2, AlertCircle } from "lucide-react";
+import { Upload as UploadIcon, FileSpreadsheet, CheckCircle2, AlertCircle, RefreshCw, Database } from "lucide-react";
 import { useUploads } from "@/hooks/useDashboardData";
 import { slugify, decodeText } from "@/lib/format";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
+type SyncState = { kind: "idle" } | { kind: "syncing" } | { kind: "done"; storesUpdated: number; promotionsUpserted: number; promotionsRemoved: number; unmatched: string[] } | { kind: "error"; msg: string };
+
 type Status = { kind: "idle" } | { kind: "parsing" } | { kind: "uploading"; progress: number } | { kind: "success"; stores: number; items: number } | { kind: "error"; msg: string };
 
 export default function Upload() {
   const [status, setStatus] = useState<Status>({ kind: "idle" });
+  const [syncStatus, setSyncStatus] = useState<SyncState>({ kind: "idle" });
   const [filename, setFilename] = useState("");
   const [note, setNote] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
   const { data: uploads } = useUploads();
+
+  const handleAirtableSync = async () => {
+    setSyncStatus({ kind: "syncing" });
+    try {
+      const { data, error } = await supabase.functions.invoke("sync-airtable", { body: {} });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error ?? "Sync failed");
+      setSyncStatus({
+        kind: "done",
+        storesUpdated: data.stores_updated ?? 0,
+        promotionsUpserted: data.promotions_upserted ?? 0,
+        promotionsRemoved: data.promotions_removed ?? 0,
+        unmatched: data.stores_unmatched ?? [],
+      });
+      toast.success(`Synced ${data.stores_updated} stores · ${data.promotions_upserted} promos`);
+      qc.invalidateQueries();
+    } catch (e: any) {
+      console.error(e);
+      setSyncStatus({ kind: "error", msg: e.message ?? "Sync failed" });
+      toast.error("Airtable sync failed: " + (e.message ?? "unknown"));
+    }
+  };
 
   const handleFile = async (file: File) => {
     setFilename(file.name);
@@ -149,6 +174,40 @@ export default function Upload() {
           )}
           {status.kind === "success" && <Alert icon={CheckCircle2} text={`Successfully imported ${status.stores} stores and ${status.items} items.`} variant="success" />}
           {status.kind === "error" && <Alert icon={AlertCircle} text={status.msg} variant="error" />}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2"><Database className="h-4 w-4" /> Sync from Airtable (Col'Cacchio OS)</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Pulls Uber Eats links onto matching stores and refreshes the Promotion Tracker. Runs only when you click Sync.
+          </p>
+          <Button onClick={handleAirtableSync} disabled={syncStatus.kind === "syncing"}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${syncStatus.kind === "syncing" ? "animate-spin" : ""}`} />
+            {syncStatus.kind === "syncing" ? "Syncing..." : "Sync from Airtable"}
+          </Button>
+
+          {syncStatus.kind === "done" && (
+            <div className="space-y-2">
+              <Alert
+                icon={CheckCircle2}
+                variant="success"
+                text={`Updated ${syncStatus.storesUpdated} stores · ${syncStatus.promotionsUpserted} promotions saved · ${syncStatus.promotionsRemoved} removed`}
+              />
+              {syncStatus.unmatched.length > 0 && (
+                <div className="rounded-md border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 text-xs">
+                  <div className="font-medium mb-1 text-yellow-700">{syncStatus.unmatched.length} Airtable store(s) didn't match an existing store name:</div>
+                  <ul className="list-disc pl-5 text-muted-foreground">
+                    {syncStatus.unmatched.map((u) => <li key={u}>{u}</li>)}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+          {syncStatus.kind === "error" && <Alert icon={AlertCircle} variant="error" text={syncStatus.msg} />}
         </CardContent>
       </Card>
 
