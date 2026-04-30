@@ -112,8 +112,16 @@ export default function UberEats() {
         (s) => s.name.toLowerCase().includes(q) || (s.store_group ?? "").toLowerCase().includes(q),
       );
     }
-    return list;
-  }, [stores, showMissing, groupFilter, storeQuery]);
+    const sorted = [...list].sort((a, b) => {
+      switch (storeSortKey) {
+        case "name": return compare(a.name, b.name, storeSortDir);
+        case "store_group": return compare(a.store_group, b.store_group, storeSortDir);
+        case "item_count": return compare(a.item_count, b.item_count, storeSortDir);
+        case "uber_eats_url": return compare(a.uber_eats_url, b.uber_eats_url, storeSortDir);
+      }
+    });
+    return sorted;
+  }, [stores, showMissing, groupFilter, storeQuery, storeSortKey, storeSortDir]);
 
   const filteredItems = useMemo(() => {
     let list = (items ?? []).filter((i) => !!i.deep_link || !!i.stores.uber_eats_url);
@@ -126,8 +134,22 @@ export default function UberEats() {
         (i) => i.name.toLowerCase().includes(q) || (i.description ?? "").toLowerCase().includes(q),
       );
     }
-    return list;
-  }, [items, linkFilter, itemStoreFilter, itemQuery]);
+    const sorted = [...list].sort((a, b) => {
+      switch (itemSortKey) {
+        case "name": return compare(a.name, b.name, itemSortDir);
+        case "store": return compare(a.stores.name, b.stores.name, itemSortDir);
+        case "category": return compare(a.category, b.category, itemSortDir);
+        case "price":
+          return compare(
+            a.price == null ? null : Number(a.price),
+            b.price == null ? null : Number(b.price),
+            itemSortDir,
+          );
+        case "link": return compare(a.deep_link ? 0 : 1, b.deep_link ? 0 : 1, itemSortDir);
+      }
+    });
+    return sorted;
+  }, [items, linkFilter, itemStoreFilter, itemQuery, itemSortKey, itemSortDir]);
 
   const exportStores = () => {
     downloadCsv(
@@ -153,7 +175,13 @@ export default function UberEats() {
     );
   };
 
-  const visibleItems = filteredItems.slice(0, itemsShown);
+  const storeTotalPages = Math.max(1, Math.ceil(filteredStores.length / storePageSize));
+  const safeStorePage = Math.min(storePage, storeTotalPages - 1);
+  const pagedStores = filteredStores.slice(safeStorePage * storePageSize, (safeStorePage + 1) * storePageSize);
+
+  const itemTotalPages = Math.max(1, Math.ceil(filteredItems.length / itemPageSize));
+  const safeItemPage = Math.min(itemPage, itemTotalPages - 1);
+  const pagedItems = filteredItems.slice(safeItemPage * itemPageSize, (safeItemPage + 1) * itemPageSize);
 
   return (
     <div className="space-y-6">
