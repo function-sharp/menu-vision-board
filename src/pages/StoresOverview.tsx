@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useStores, useAllItems } from "@/hooks/useDashboardData";
+import { useGooglePlaces, useStoreReviewStats } from "@/hooks/useReviews";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -48,11 +49,15 @@ type Row = {
   min_price: number | null;
   max_price: number | null;
   linked_pct: number; // 0..1, items with deep_link
+  google_rating: number | null;
+  google_reviews: number | null;
 };
 
 export default function StoresOverview() {
   const { data: stores, isLoading: storesLoading } = useStores();
   const { data: items, isLoading: itemsLoading } = useAllItems();
+  const { data: places } = useGooglePlaces();
+  const { data: reviewStats } = useStoreReviewStats();
 
   const [q, setQ] = useState("");
   const [group, setGroup] = useState<string>("all");
