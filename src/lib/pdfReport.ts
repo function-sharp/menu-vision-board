@@ -10,6 +10,36 @@ export interface StorePdfMeta {
   kpis?: Array<{ label: string; value: string }>;
 }
 
+// ---- Shared KPI value formatters (used by callers for consistent display) ----
+
+/** Whole number with thousands separators, e.g. 1284 → "1,284". */
+export const fmtInt = (n: number | null | undefined): string =>
+  n == null || !Number.isFinite(n) ? "—" : Math.round(n).toLocaleString();
+
+/** Decimal with fixed digits + thousands separators, e.g. 4.3 → "4.30". */
+export const fmtDecimal = (n: number | null | undefined, digits = 2): string =>
+  n == null || !Number.isFinite(n)
+    ? "—"
+    : n.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+
+/** Rating out of 5, e.g. 4.321 → "4.32 / 5". */
+export const fmtRating = (n: number | null | undefined): string =>
+  n == null || !Number.isFinite(n) ? "—" : `${fmtDecimal(n, 2)} / 5`;
+
+/** Percent from a 0–1 fraction, e.g. 0.6789 → "67.9%". */
+export const fmtPctFromFraction = (n: number | null | undefined, digits = 1): string =>
+  n == null || !Number.isFinite(n) ? "—" : `${(n * 100).toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits })}%`;
+
+/** Percent already on 0–100 scale. */
+export const fmtPct = (n: number | null | undefined, digits = 1): string =>
+  n == null || !Number.isFinite(n) ? "—" : `${n.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits })}%`;
+
+/** ZAR currency, no fractional cents on big numbers, e.g. 1234.5 → "R 1,234.50". */
+export const fmtZAR = (n: number | null | undefined): string =>
+  n == null || !Number.isFinite(n)
+    ? "—"
+    : `R ${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
 /**
  * Capture the given DOM element and embed it in a multi-page A4 PDF
  * along with a header (store name, range, KPIs) and footer.
