@@ -19,14 +19,17 @@ import { toast } from "sonner";
 
 const PAGE_SIZE = 50;
 
+type LinkFilter = "all" | "item" | "store" | "item_or_store" | "none";
+
 type Filters = {
   q: string;
   storeFilter: string;
   categoryFilter: string;
   groupFilter: string;
+  linkFilter: LinkFilter;
 };
 
-const EMPTY: Filters = { q: "", storeFilter: "all", categoryFilter: "all", groupFilter: "all" };
+const EMPTY: Filters = { q: "", storeFilter: "all", categoryFilter: "all", groupFilter: "all", linkFilter: "all" };
 
 const QUICK_PRESETS: Array<{ name: string; filters: Filters }> = [
   { name: "Pizzas", filters: { ...EMPTY, q: "pizza" } },
