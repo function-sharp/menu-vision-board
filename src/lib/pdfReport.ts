@@ -131,7 +131,10 @@ export async function exportStoreReportPdf(
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(9);
     pdf.setTextColor(110);
-    pdf.text(`Timeframe: ${meta.rangeLabel}`, margin, cursorY + 14);
+    const subTimeframe = meta.rangeMonths
+      ? `Timeframe: ${meta.rangeLabel} · ${formatRangeWindow(meta.rangeMonths, generatedAt)}`
+      : `Timeframe: ${meta.rangeLabel}`;
+    pdf.text(subTimeframe, margin, cursorY + 14);
     pdf.setTextColor(0);
     cursorY += 24;
 
@@ -141,7 +144,13 @@ export async function exportStoreReportPdf(
     const labelColW = contentWidth * 0.7;
     const valueColW = contentWidth - labelColW;
     const tableTop = cursorY;
-    const rows = meta.kpis;
+    // Prepend a clearly-formatted timeframe row so it sits inside the table
+    // alongside the other KPIs, not just as a sub-heading.
+    const timeframeRow = {
+      label: "Timeframe",
+      value: meta.rangeMonths ? formatRangeWindow(meta.rangeMonths, generatedAt) : meta.rangeLabel,
+    };
+    const rows = [timeframeRow, ...meta.kpis];
     const tableH = rowH * (rows.length + 1);
 
     // Header row fill
