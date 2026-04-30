@@ -617,3 +617,125 @@ function PaginationBar({
     </div>
   );
 }
+
+function EditableUrlCell({
+  value,
+  placeholder,
+  onSave,
+}: {
+  value: string | null | undefined;
+  placeholder: string;
+  onSave: (url: string | null) => Promise<unknown>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value ?? "");
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing) {
+      setDraft(value ?? "");
+      // focus + select on next tick so the input is mounted
+      requestAnimationFrame(() => inputRef.current?.focus());
+    }
+  }, [editing, value]);
+
+  const startEdit = () => {
+    if (saving) return;
+    setEditing(true);
+  };
+
+  const cancel = () => {
+    setEditing(false);
+    setDraft(value ?? "");
+  };
+
+  const commit = async () => {
+    const trimmed = draft.trim();
+    const next = trimmed === "" ? null : trimmed;
+    const current = value ?? null;
+    if (next === current) { setEditing(false); return; }
+    if (next !== null && !isValidUrl(next)) {
+      toast.error("Enter a valid http(s) URL");
+      return;
+    }
+    setSaving(true);
+    try {
+      await onSave(next);
+      setEditing(false);
+    } catch {
+      // toast handled by mutation
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") { e.preventDefault(); commit(); }
+    else if (e.key === "Escape") { e.preventDefault(); cancel(); }
+  };
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1">
+        <Input
+          ref={inputRef}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={onKeyDown}
+          placeholder="https://www.ubereats.com/..."
+          className="h-8 text-xs font-mono"
+          disabled={saving}
+        />
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="h-8 w-8 p-0 shrink-0"
+          onClick={commit}
+          disabled={saving}
+          aria-label="Save"
+        >
+          {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="h-8 w-8 p-0 shrink-0"
+          onClick={cancel}
+          disabled={saving}
+          aria-label="Cancel"
+        >
+          <X className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <TooltipProvider delayDuration={300}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={startEdit}
+            className="group flex w-full items-center gap-2 text-left rounded px-1 py-0.5 hover:bg-muted/60 transition-colors"
+          >
+            {value ? (
+              <span className="text-xs font-mono text-muted-foreground truncate flex-1 min-w-0">
+                {value}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 flex-1">
+                <AlertTriangle className="h-3 w-3" /> Missing — click to add
+              </span>
+            )}
+            <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 shrink-0" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top">Click to edit · Enter to save · Esc to cancel</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
