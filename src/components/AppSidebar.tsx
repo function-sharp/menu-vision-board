@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Store, Utensils, GitCompare, BarChart3, Upload, Pizza, Megaphone, ExternalLink, LogOut } from "lucide-react";
+import { LayoutDashboard, Store, Utensils, GitCompare, BarChart3, Upload, Pizza, Megaphone, ExternalLink, LogOut, History } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -25,6 +25,7 @@ const items = [
   { title: "Promotions", url: "/promotions", icon: Megaphone },
   { title: "Uber Eats", url: "/uber-eats", icon: ExternalLink },
   { title: "Data Upload", url: "/upload", icon: Upload },
+  { title: "Activity Log", url: "/activity", icon: History },
 ];
 
 export function AppSidebar() {

@@ -16,6 +16,7 @@ import { formatZAR, decodeText } from "@/lib/format";
 import { Search, Download, Bookmark, BookmarkPlus, X, MoreVertical, Trash2, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { logActivity } from "@/lib/activityLog";
 
 const PAGE_SIZE = 50;
 
@@ -78,6 +79,17 @@ export default function MenuBrowser() {
         store_group: filters.groupFilter === "all" ? null : filters.groupFilter,
       });
       if (error) throw error;
+      void logActivity({
+        action: "menu_filter_preset.created",
+        entity_type: "menu_filter_preset",
+        entity_label: name,
+        details: {
+          search_query: filters.q || null,
+          store_slug: filters.storeFilter,
+          category: filters.categoryFilter,
+          store_group: filters.groupFilter,
+        },
+      });
     },
     onSuccess: () => {
       toast.success("Preset saved");
@@ -90,8 +102,15 @@ export default function MenuBrowser() {
 
   const deletePreset = useMutation({
     mutationFn: async (id: string) => {
+      const preset = presets?.find((p: any) => p.id === id);
       const { error } = await supabase.from("menu_filter_presets").delete().eq("id", id);
       if (error) throw error;
+      void logActivity({
+        action: "menu_filter_preset.deleted",
+        entity_type: "menu_filter_preset",
+        entity_id: id,
+        entity_label: preset?.name ?? null,
+      });
     },
     onSuccess: (_, id) => {
       toast.success("Preset deleted");

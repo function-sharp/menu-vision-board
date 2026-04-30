@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logActivity } from "@/lib/activityLog";
 
 export type ScrapeAction =
   | "find_store_url"
@@ -41,7 +42,7 @@ export function useScrape() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: runScrape,
-    onSuccess: (_data, vars) => {
+    onSuccess: (data, vars) => {
       qc.invalidateQueries({ queryKey: ["stores"] });
       qc.invalidateQueries({ queryKey: ["all-items"] });
       qc.invalidateQueries({ queryKey: ["items"] });
@@ -53,7 +54,27 @@ export function useScrape() {
         validate_url: "URL validated",
       };
       toast.success(labels[vars.action]);
+      void logActivity({
+        action: `scrape.${vars.action}`,
+        entity_type: vars.payload.item_id ? "menu_item" : "store",
+        entity_id: vars.payload.item_id ?? vars.payload.store_id ?? null,
+        details: {
+          provider: vars.provider ?? "firecrawl",
+          url: data?.url,
+          matched: data?.matched,
+          total: data?.total,
+        },
+      });
     },
-    onError: (e: Error) => toast.error(e.message || "Scrape failed"),
+    onError: (e: Error, vars) => {
+      toast.error(e.message || "Scrape failed");
+      void logActivity({
+        action: `scrape.${vars.action}.failed`,
+        entity_type: vars.payload.item_id ? "menu_item" : "store",
+        entity_id: vars.payload.item_id ?? vars.payload.store_id ?? null,
+        details: { error: e.message, provider: vars.provider ?? "firecrawl" },
+      });
+    },
   });
 }
+

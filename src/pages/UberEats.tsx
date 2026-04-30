@@ -17,6 +17,7 @@ import { formatZAR, decodeText } from "@/lib/format";
 import { ExternalLink, Copy, Search, Download, Link2, AlertTriangle, ArrowUp, ArrowDown, ArrowUpDown, Pencil, Check, X, Loader2, Info } from "lucide-react";
 import { toast } from "sonner";
 import { SyncCenter } from "@/components/BulkScrapePanel";
+import { logActivity } from "@/lib/activityLog";
 import { StoreScrapeActions, ItemScrapeActions } from "@/components/ScrapeRowActions";
 
 function isValidUrl(value: string): boolean {
@@ -75,12 +76,19 @@ export default function UberEats() {
   const queryClient = useQueryClient();
 
   const updateStoreUrl = useMutation({
-    mutationFn: async ({ id, url }: { id: string; url: string | null }) => {
+    mutationFn: async ({ id, url, name }: { id: string; url: string | null; name?: string }) => {
       const { error } = await supabase
         .from("stores")
         .update({ uber_eats_url: url, manually_edited_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
+      void logActivity({
+        action: url ? "store.uber_eats_url.set" : "store.uber_eats_url.cleared",
+        entity_type: "store",
+        entity_id: id,
+        entity_label: name ?? null,
+        details: { url },
+      });
     },
     onSuccess: () => {
       toast.success("Store link updated");
@@ -91,12 +99,19 @@ export default function UberEats() {
   });
 
   const updateItemDeepLink = useMutation({
-    mutationFn: async ({ id, url }: { id: string; url: string | null }) => {
+    mutationFn: async ({ id, url, name }: { id: string; url: string | null; name?: string }) => {
       const { error } = await supabase
         .from("menu_items")
         .update({ deep_link: url, manually_edited_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
+      void logActivity({
+        action: url ? "menu_item.deep_link.set" : "menu_item.deep_link.cleared",
+        entity_type: "menu_item",
+        entity_id: id,
+        entity_label: name ?? null,
+        details: { url },
+      });
     },
     onSuccess: () => {
       toast.success("Item link updated");
@@ -352,7 +367,7 @@ export default function UberEats() {
                           <EditableUrlCell
                             value={s.uber_eats_url}
                             placeholder="Add Uber Eats store URL"
-                            onSave={(v) => updateStoreUrl.mutateAsync({ id: s.id, url: v })}
+                            onSave={(v) => updateStoreUrl.mutateAsync({ id: s.id, url: v, name: s.name })}
                           />
                         </TableCell>
                         <TableCell className="text-right">
@@ -498,7 +513,7 @@ export default function UberEats() {
                             <EditableUrlCell
                               value={i.deep_link}
                               placeholder="Add item deep link"
-                              onSave={(v) => updateItemDeepLink.mutateAsync({ id: i.id, url: v })}
+                              onSave={(v) => updateItemDeepLink.mutateAsync({ id: i.id, url: v, name: i.name })}
                             />
                           </TableCell>
                           <TableCell className="text-right">
