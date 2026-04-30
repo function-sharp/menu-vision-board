@@ -353,6 +353,24 @@ export const useGenerateInsight = () => {
   });
 };
 
+// Lightweight server-side search across reviews (used in Global Search ⌘K)
+export const useReviewSearch = (query: string, enabled: boolean) =>
+  useQuery({
+    queryKey: ["review-search", query],
+    enabled: enabled && query.trim().length >= 2,
+    queryFn: async () => {
+      const s = query.trim().replace(/[%_]/g, "");
+      const { data, error } = await supabase
+        .from("google_reviews")
+        .select("id,review_id,store_id,reviewer_name,stars,text,published_at")
+        .or(`text.ilike.%${s}%,reviewer_name.ilike.%${s}%,response_text.ilike.%${s}%`)
+        .order("published_at", { ascending: false, nullsFirst: false })
+        .limit(8);
+      if (error) throw error;
+      return (data ?? []) as Pick<GoogleReview, "id" | "review_id" | "store_id" | "reviewer_name" | "stars" | "text" | "published_at">[];
+    },
+  });
+
 // Update google_places.store_id manually (used in Manage Links tab)
 export const useUpdatePlaceStore = () => {
   const qc = useQueryClient();
