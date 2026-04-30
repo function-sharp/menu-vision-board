@@ -1,97 +1,74 @@
-# Make Supabase the source of truth — full two-way sync
+# Supabase Integration Audit Plan
 
-You picked: **Supabase wins** for conflicts, **manual buttons** to trigger every sync (no schedule), and four sync directions enabled. The existing `sync-airtable` function and Excel uploader both **overwrite Supabase**, which loses scrape results and inline edits. We'll fix all of that.
+Goal: verify every part of the app that talks to Supabase actually works end-to-end, surface issues, and produce a prioritised fix list. No risky writes — read‑only checks first, then targeted test calls.
 
-## What changes
+## Scope
 
-```text
-Supabase = source of truth
-  ↑↑↑                              ↓↓↓
-  │ │ └─ Airtable → Supabase  (auto-fill blanks only)
-  │ └─── Excel    → Supabase  (merge, keep manual edits)
-  └───── Scraper  → Supabase  (already wired, made more thorough)
-                     ↓↓↓
-                Supabase → Airtable  (push edits/scrape results back)
-```
+Tables: `stores`, `menu_items`, `promotions`, `uploads`, `scrape_jobs`, `sync_runs`, `menu_filter_presets`
+Edge functions: `scrape-uber-eats`, `sync-airtable`, `merge-excel`
+Frontend touchpoints: `useDashboardData.ts`, `useScrape.ts`, `UberEats.tsx`, `Upload.tsx`, `MenuBrowser.tsx`, `BulkScrapePanel.tsx`
 
-Every change shows up in **one Sync Center** card on the Uber Eats hub:
+---
 
-```text
-┌─ Sync Center (manual) ──────────────────────────────────┐
-│ [Pull from Airtable]  [Push to Airtable]  [Sync log]    │
-│ Last pull:  2h ago — 12 fills, 0 conflicts              │
-│ Last push:  10m ago — 3 stores updated in Airtable      │
-└─────────────────────────────────────────────────────────┘
-```
+## Phase 1 — Data integrity (read-only SQL)
 
-## Conflict rule (everywhere)
+1. **Orphan check** — `menu_items` rows whose `store_id` doesn't exist in `stores`.
+2. **Duplicate check** — duplicate slugs in `stores`, duplicate `(store_id, name)` in `menu_items`, duplicate `airtable_id` in `promotions`.
+3. **Counts vs. reality** — compare `stores.item_count` against `COUNT(menu_items)` per store, list mismatches.
+4. **Coverage** — stores missing `uber_eats_url`, items missing `deep_link`, items missing `price`.
+5. **Currency sanity** — any `currency != 'ZAR'`.
+6. **Promotion freshness** — promos with `end_date < today` still showing as active, missing `start_date`/`end_date`.
+7. **Sync flag audit** — count rows with `manually_edited_at` set (proves the "Supabase wins" lock works).
+8. **Salt Rock mismatch** — find the Airtable name vs. Supabase slug to fix the 1 unmatched store from the last pull.
 
-**Supabase wins.** Concretely:
-- Airtable→Supabase only writes a field if Supabase value is `NULL`/empty.
-- Excel→Supabase merges instead of wiping; existing non-null fields are kept.
-- Supabase→Airtable always overwrites Airtable.
-- Scraper writes always succeed (you triggered them, you want them).
+## Phase 2 — Edge function health
 
-A new column `manually_edited_at timestamptz` on `stores` and `menu_items` records when a value was last set by inline edit / scrape, so we can show "modified since last Airtable pull" in the UI.
+For each function, check recent logs + run one safe test call:
 
-## Backend changes
+- **scrape-uber-eats** — pick the 1 store whose last `validate_url` failed, re-run validation, capture the error from logs. Confirm `manually_edited_at` is being stamped on success.
+- **sync-airtable (pull)** — re-run, confirm "Supabase wins" still kicks in (expect `stores_filled: 0`, `stores_skipped_supabase_wins: 23`).
+- **sync-airtable (push)** — **first ever run**. Push to Airtable and capture whether the `Uber Eats URL` field is writable or a read-only lookup. If it errors, document the exact Airtable field name needed.
+- **merge-excel** — inspect code path, confirm it never deletes, only upserts blanks. (No test upload unless you want one.)
 
-**1 schema migration**
-- `stores.manually_edited_at timestamptz`
-- `menu_items.manually_edited_at timestamptz`
-- `sync_runs` table (id, direction, source, started_at, finished_at, status, summary jsonb, error text) — feeds the Sync log drawer.
+## Phase 3 — Frontend ↔ Supabase contract
 
-**Edge function: `sync-airtable` (rewrite)**
-Two modes via request body `{ direction: "pull" | "push" }`.
+- Verify `useAllItems` pagination really fetches all 2,780 rows (not capped at 1,000).
+- Verify the inline URL editor on `/uber-eats` invalidates the right React Query keys (it does: `stores`, `all-items`).
+- Verify `MenuBrowser` filter presets save/load/delete against `menu_filter_presets`.
+- Confirm the Sync Log sheet's 5s polling isn't hammering the DB unnecessarily — recommend pausing when sheet is closed.
 
-- `pull` (replaces today's behaviour):
-  - Fetch Stores + Promotion Tracker from Airtable (gateway, unchanged).
-  - For each Airtable store: only set `uber_eats_url`, `address`, `cuisine`, `price_range`, etc. **if the Supabase value is NULL**. Counts: filled / skipped (because Supabase had a value) / unmatched.
-  - Promotions still upsert by `airtable_id` (Airtable owns promos — no manual editing of those in this app).
-  - Writes a row to `sync_runs`.
+## Phase 4 — Security review
 
-- `push`:
-  - Read all Supabase stores that have either `manually_edited_at IS NOT NULL` or a `uber_eats_url` not present in Airtable.
-  - For each, find the Airtable record by name (same normalisation we already do) and PATCH `Uber Eats URL`, `Address`, `Cuisine`, `Price Range` back into Airtable.
-  - Counts: pushed / skipped / not-found-in-airtable.
-  - Writes a row to `sync_runs`.
+Current state: **every table has fully public RLS** (anon can SELECT/INSERT/UPDATE, most can DELETE). For an internal tool this is a deliberate choice, but worth flagging:
 
-**Edge function: `merge-excel` (new)**
-The current Excel upload runs in the browser and does `delete()` on both tables. Move it to an edge function that does:
+- Run the Supabase linter for any unflagged misconfig.
+- Run the agent security scanner.
+- Document the risk: anyone with the published URL + anon key can wipe the database. Two options to discuss with you:
+  1. **Add auth** (email login, single allowed user/role) — biggest change.
+  2. **Keep public reads, lock writes** behind a service-role-only edge function — medium change.
+  3. **Accept risk** — document explicitly, do nothing.
 
-1. Receive parsed rows (browser still parses XLSX with `xlsx` to keep the existing UX — only the writes move server-side).
-2. Upsert stores by `slug`. For each store, only fill columns where the Supabase row is NULL — exception: `name`, `slug`, `item_count` always update.
-3. For items: upsert by `(store_id, name)`. Same NULL-only rule for `price`, `description`, `category`, `currency`, `deep_link`. Items present in Supabase but not in Excel are **kept** (no deletion) — Supabase wins.
-4. Returns `{stores_inserted, stores_merged, items_inserted, items_merged, items_kept}`.
-5. Logs to `sync_runs` and `uploads`.
+## Phase 5 — Observability & cleanup
 
-**Edge function: `scrape-uber-eats` (small additions)**
-- On every successful write to `stores` or `menu_items`, also set `manually_edited_at = now()` so push-back can detect it.
-- Already writes to `scrape_jobs` — no change there.
+- Confirm `sync_runs` and `scrape_jobs` are filling correctly for every operation.
+- Recommend a small "Last sync per source" widget on Overview.
+- Identify dead code / unused tables / unused secrets.
+- Check that no edge function logs are leaking secrets (Firecrawl/Airtable keys).
 
-## Frontend changes
+---
 
-- **`src/pages/UberEats.tsx`**: replace the current "Bulk scrape (Firecrawl)" card with a tabbed **Sync Center** card:
-  - Tab 1 *Scrape* — current bulk scrape buttons.
-  - Tab 2 *Airtable* — `Pull from Airtable` and `Push to Airtable` buttons + last-run summary.
-  - Tab 3 *Excel* — quick link to `/upload`.
-  - Job log drawer becomes a unified "Sync log" showing both `scrape_jobs` and `sync_runs` rows.
+## Deliverable
 
-- **`src/pages/Upload.tsx`**: rewrite Excel handler to call the new `merge-excel` edge function. Add a clear "Merge mode (Supabase wins)" badge and remove the warning that uploads "replace all existing data". Keep the Airtable section but make it obvious it's now bi-directional.
+A single markdown report saved to `/mnt/documents/supabase-audit.md` with:
+- ✅ what's working
+- ⚠️ what's broken or risky (with severity)
+- 🔧 a prioritised fix list (P0/P1/P2) with effort estimates
+- Specific row-level findings (orphan IDs, mismatched counts, the Salt Rock fix, etc.)
 
-- **`src/pages/StoreDetail.tsx`**: small "Last edited X ago" stamp under the title when `manually_edited_at` is set.
+After you approve, I'll switch to build mode and execute Phases 1–5, then write the report. **No schema changes, no destructive writes** — only reads and the two safe edge-function test calls (re-validate 1 URL, run one Airtable pull). The Airtable **push** test will only run if you explicitly opt in, since it's the one operation that mutates an external system.
 
-## Out of scope (per your answers)
+## Optional add-ons (tell me yes/no)
 
-- No cron schedule; everything is button-triggered.
-- No "lock" flag — the rule is uniformly "Supabase wins". `manually_edited_at` is just for visibility, not enforcement.
-- No deletion of Supabase rows from Excel/Airtable syncs (Supabase is the source of truth).
-
-## Order of operations
-
-1. Migration: add `manually_edited_at` columns + `sync_runs` table.
-2. Rewrite `sync-airtable` to support `pull` (NULL-only) and `push`.
-3. Create `merge-excel` function; move write logic out of `Upload.tsx`.
-4. Update `scrape-uber-eats` to stamp `manually_edited_at`.
-5. Build Sync Center card in `UberEats.tsx`; rewire `Upload.tsx`; small badge in `StoreDetail.tsx`.
-6. Smoke-test: pull → no overwrite of scraped Col'Cacchio metadata; push → Airtable record updates.
+- **(A)** Run the Airtable push during the audit to confirm it works.
+- **(B)** Auto-fix safe issues in the same pass (e.g. recompute `stores.item_count`, fix the Salt Rock name).
+- **(C)** Implement the security recommendation you pick.
