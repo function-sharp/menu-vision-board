@@ -3,7 +3,10 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/hooks/useAuth";
+import AuthGuard from "./components/AuthGuard";
 import AppLayout from "./components/AppLayout";
+import Auth from "./pages/Auth";
 import Overview from "./pages/Overview";
 import Stores from "./pages/Stores";
 import StoreDetail from "./pages/StoreDetail";
@@ -23,20 +26,25 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route element={<AppLayout />}>
-            <Route path="/" element={<Overview />} />
-            <Route path="/stores" element={<Stores />} />
-            <Route path="/stores/:slug" element={<StoreDetail />} />
-            <Route path="/menu" element={<MenuBrowser />} />
-            <Route path="/compare" element={<ItemComparison />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/promotions" element={<Promotions />} />
-            <Route path="/uber-eats" element={<UberEats />} />
-            <Route path="/upload" element={<Upload />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route element={<AuthGuard />}>
+              <Route element={<AppLayout />}>
+                <Route path="/" element={<Overview />} />
+                <Route path="/stores" element={<Stores />} />
+                <Route path="/stores/:slug" element={<StoreDetail />} />
+                <Route path="/menu" element={<MenuBrowser />} />
+                <Route path="/compare" element={<ItemComparison />} />
+                <Route path="/analytics" element={<Analytics />} />
+                <Route path="/promotions" element={<Promotions />} />
+                <Route path="/uber-eats" element={<UberEats />} />
+                <Route path="/upload" element={<Upload />} />
+              </Route>
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
