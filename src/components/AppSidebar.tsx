@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Store, Utensils, GitCompare, BarChart3, Upload, Pizza, Megaphone, ExternalLink, LogOut, History } from "lucide-react";
+import { LayoutDashboard, Store, Utensils, GitCompare, BarChart3, Upload, Pizza, Megaphone, ExternalLink, LogOut, History, TableProperties } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -19,6 +19,7 @@ import { toast } from "sonner";
 const items = [
   { title: "Overview", url: "/", icon: LayoutDashboard },
   { title: "Stores", url: "/stores", icon: Store },
+  { title: "Stores Overview", url: "/stores-overview", icon: TableProperties },
   { title: "Menu Browser", url: "/menu", icon: Utensils },
   { title: "Item Comparison", url: "/compare", icon: GitCompare },
   { title: "Categories & Pricing", url: "/analytics", icon: BarChart3 },
