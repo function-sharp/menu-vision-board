@@ -70,6 +70,33 @@ function downloadCsv(filename: string, headers: string[], rows: (string | number
 export default function UberEats() {
   const { data: stores, isLoading: storesLoading } = useStores();
   const { data: items, isLoading: itemsLoading } = useAllItems();
+  const queryClient = useQueryClient();
+
+  const updateStoreUrl = useMutation({
+    mutationFn: async ({ id, url }: { id: string; url: string | null }) => {
+      const { error } = await supabase.from("stores").update({ uber_eats_url: url }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Store link updated");
+      queryClient.invalidateQueries({ queryKey: ["stores"] });
+      queryClient.invalidateQueries({ queryKey: ["all-items"] });
+    },
+    onError: (e: Error) => toast.error(e.message || "Failed to update store link"),
+  });
+
+  const updateItemDeepLink = useMutation({
+    mutationFn: async ({ id, url }: { id: string; url: string | null }) => {
+      const { error } = await supabase.from("menu_items").update({ deep_link: url }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Item link updated");
+      queryClient.invalidateQueries({ queryKey: ["all-items"] });
+      queryClient.invalidateQueries({ queryKey: ["items"] });
+    },
+    onError: (e: Error) => toast.error(e.message || "Failed to update item link"),
+  });
 
   // Stores section state
   const [storeQuery, setStoreQuery] = useState("");
