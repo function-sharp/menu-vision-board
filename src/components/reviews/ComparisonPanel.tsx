@@ -252,10 +252,20 @@ export function ComparisonPanel({
           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={onClear}>
             Clear all
           </Button>
+          <Button
+            variant="default"
+            size="sm"
+            className="h-7 px-2.5 text-xs"
+            onClick={handleExportPdf}
+            disabled={exporting || !allReady}
+          >
+            <Download className="h-3 w-3 mr-1" />
+            {exporting ? "Generating..." : "Export PDF"}
+          </Button>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-5">
+      <CardContent ref={reportRef} className="space-y-5">
         {/* KPI table */}
         <div className="overflow-x-auto rounded-md border">
           <Table>
