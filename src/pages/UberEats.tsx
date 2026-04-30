@@ -497,3 +497,71 @@ function StatCard({
     </Card>
   );
 }
+
+function SortHeader({
+  label,
+  active,
+  dir,
+  onClick,
+  align = "left",
+}: {
+  label: string;
+  active: boolean;
+  dir: SortDir;
+  onClick: () => void;
+  align?: "left" | "right";
+}) {
+  const Icon = !active ? ArrowUpDown : dir === "asc" ? ArrowUp : ArrowDown;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-1 hover:text-foreground transition-colors ${active ? "text-foreground font-medium" : "text-muted-foreground"} ${align === "right" ? "ml-auto" : ""}`}
+    >
+      {label}
+      <Icon className="h-3 w-3" />
+    </button>
+  );
+}
+
+function PaginationBar({
+  page,
+  totalPages,
+  pageSize,
+  totalRows,
+  onPageChange,
+  onPageSizeChange,
+}: {
+  page: number;
+  totalPages: number;
+  pageSize: number;
+  totalRows: number;
+  onPageChange: (n: number) => void;
+  onPageSizeChange: (n: number) => void;
+}) {
+  const start = totalRows === 0 ? 0 : page * pageSize + 1;
+  const end = Math.min(totalRows, (page + 1) * pageSize);
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm">
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <span>Rows per page</span>
+        <Select value={String(pageSize)} onValueChange={(v) => onPageSizeChange(Number(v))}>
+          <SelectTrigger className="h-8 w-20"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {PAGE_SIZE_OPTIONS.map((n) => (
+              <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <span className="hidden sm:inline">· {start.toLocaleString()}–{end.toLocaleString()} of {totalRows.toLocaleString()}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button variant="outline" size="sm" disabled={page === 0} onClick={() => onPageChange(0)}>First</Button>
+        <Button variant="outline" size="sm" disabled={page === 0} onClick={() => onPageChange(page - 1)}>Previous</Button>
+        <span className="text-muted-foreground px-2">Page {page + 1} of {totalPages}</span>
+        <Button variant="outline" size="sm" disabled={page + 1 >= totalPages} onClick={() => onPageChange(page + 1)}>Next</Button>
+        <Button variant="outline" size="sm" disabled={page + 1 >= totalPages} onClick={() => onPageChange(totalPages - 1)}>Last</Button>
+      </div>
+    </div>
+  );
+}
