@@ -339,15 +339,11 @@ export default function UberEats() {
                         <TableCell className="text-muted-foreground text-sm">{s.store_group ?? "—"}</TableCell>
                         <TableCell className="text-right text-sm">{s.item_count}</TableCell>
                         <TableCell className="max-w-md">
-                          {s.uber_eats_url ? (
-                            <span className="text-xs font-mono text-muted-foreground truncate block">
-                              {s.uber_eats_url}
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-                              <AlertTriangle className="h-3 w-3" /> Missing
-                            </span>
-                          )}
+                          <EditableUrlCell
+                            value={s.uber_eats_url}
+                            placeholder="Add Uber Eats store URL"
+                            onSave={(v) => updateStoreUrl.mutateAsync({ id: s.id, url: v })}
+                          />
                         </TableCell>
                         <TableCell className="text-right">
                           {s.uber_eats_url ? (
