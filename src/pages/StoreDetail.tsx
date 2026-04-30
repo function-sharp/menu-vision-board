@@ -10,6 +10,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReviewCard } from "@/components/ReviewCard";
 import { Stars, StarDistribution } from "@/components/StarDistribution";
+import { ReviewTrendChart } from "@/components/reviews/ReviewTrendChart";
 import { formatZAR, decodeText } from "@/lib/format";
 import { ArrowLeft, Star, MapPin, Phone, Search, ExternalLink, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -208,6 +209,7 @@ function StoreReviewsTab({ storeId }: { storeId: string }) {
           <CardContent>{stats ? <StarDistribution distribution={stats.distribution} /> : <Skeleton className="h-24" />}</CardContent>
         </Card>
       </div>
+      <ReviewTrendChart storeId={storeId} months={24} title="Review trend — last 24 months" />
       {isLoading ? (
         <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-32" />)}</div>
       ) : (
