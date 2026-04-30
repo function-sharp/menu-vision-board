@@ -229,6 +229,7 @@ function StoreReviewsTab({ storeId, store }: { storeId: string; store: any }) {
         storeGroup: store?.store_group ?? null,
         storeAddress: store?.address ?? null,
         rangeLabel: `Last ${activeRange.months} months`,
+        rangeMonths: activeRange.months,
         kpis: stats
           ? await (async () => {
               const { fmtInt, fmtRating, fmtPctFromFraction, fmtDecimal } = await import("@/lib/pdfReport");
