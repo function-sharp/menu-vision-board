@@ -118,48 +118,21 @@ export function ComparisonPanel({
     }
     try {
       setExporting(true);
-      const { exportStoreReportPdf, fmtInt, fmtRating, fmtPctFromFraction, fmtDecimal } = await import("@/lib/pdfReport");
+      const { exportStoreReportPdf } = await import("@/lib/pdfReport");
       const months = (RANGES.find((r) => r.key === range) ?? RANGES[3]).months;
-      const totalReviews = queries.reduce((acc, q) => acc + (q.data?.kpi.totalReviews ?? 0), 0);
-      const ratedAvg = queries.reduce(
-        (acc, q) => {
-          const k = q.data?.kpi;
-          if (!k || !k.totalReviews) return acc;
-          return { sum: acc.sum + k.avgRating * k.totalReviews, n: acc.n + k.totalReviews };
-        },
-        { sum: 0, n: 0 },
-      );
-      const avgAcross = ratedAvg.n ? ratedAvg.sum / ratedAvg.n : 0;
-      const last30 = queries.reduce((acc, q) => acc + (q.data?.kpi.last30 ?? 0), 0);
-      const replyRates = queries
-        .map((q) => q.data?.kpi.replyRate)
-        .filter((v): v is number => typeof v === "number");
-      const avgReplyRate = replyRates.length ? replyRates.reduce((a, b) => a + b, 0) / replyRates.length : 0;
-
-      // Top performers
-      let topVolume = { name: "—", value: 0 };
-      let topRating = { name: "—", value: 0 };
-      selectedStores.forEach((s, i) => {
-        const k = queries[i].data?.kpi;
-        if (!k) return;
-        if (k.totalReviews > topVolume.value) topVolume = { name: s.name, value: k.totalReviews };
-        if (k.avgRating > topRating.value) topRating = { name: s.name, value: k.avgRating };
-      });
+      const storeKpis = selectedStores
+        .map((s, i) => {
+          const t = queries[i].data;
+          return t ? trendToStoreKpi(s.id, s.name, t) : null;
+        })
+        .filter((x): x is NonNullable<typeof x> => x !== null);
 
       await exportStoreReportPdf(reportRef.current, {
         storeName: `Store comparison (${selectedStores.length})`,
         storeGroup: selectedStores.map((s) => s.name).join(" · "),
         rangeLabel: `Last ${months} months`,
         rangeMonths: months,
-        kpis: [
-          { label: "Stores compared", value: fmtInt(selectedStores.length) },
-          { label: "Total reviews (across stores)", value: fmtInt(totalReviews) },
-          { label: "Weighted average rating", value: fmtRating(avgAcross) },
-          { label: "Average reply rate", value: fmtPctFromFraction(avgReplyRate, 1) },
-          { label: "Reviews in last 30 days", value: fmtInt(last30) },
-          { label: "Top store by volume", value: `${topVolume.name} — ${fmtInt(topVolume.value)}` },
-          { label: "Top store by rating", value: `${topRating.name} — ${fmtDecimal(topRating.value, 2)}` },
-        ],
+        kpis: buildComparisonKpiRows({ rangeMonths: months, stores: storeKpis }),
       });
       toast.success("Comparison PDF downloaded");
     } catch (err) {
