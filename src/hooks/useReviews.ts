@@ -205,9 +205,9 @@ export const useStoreReviewStats = () =>
   });
 
 // Trend: monthly volume + avg stars, last 24 months
-export const useReviewTrend = (storeId?: string | null, months = 24) =>
+export const useReviewTrend = (storeId?: string | null, months = 24, storeIds?: string[] | null) =>
   useQuery({
-    queryKey: ["review-trend", storeId ?? "all", months],
+    queryKey: ["review-trend", storeId ?? "all", months, storeIds ?? null],
     queryFn: async () => {
       const since = new Date();
       since.setMonth(since.getMonth() - months);
@@ -216,6 +216,7 @@ export const useReviewTrend = (storeId?: string | null, months = 24) =>
         .select("stars,published_at,response_text")
         .gte("published_at", since.toISOString());
       if (storeId) q = q.eq("store_id", storeId);
+      else if (storeIds && storeIds.length > 0) q = q.in("store_id", storeIds);
       // Pull in chunks (could be > 1000)
       const all: any[] = [];
       const pageSize = 1000;
@@ -258,12 +259,13 @@ export const useReviewTrend = (storeId?: string | null, months = 24) =>
   });
 
 // Response performance: % responded by star + median reply time per star
-export const useResponsePerformance = (storeId?: string | null) =>
+export const useResponsePerformance = (storeId?: string | null, storeIds?: string[] | null) =>
   useQuery({
-    queryKey: ["review-response-perf", storeId ?? "all"],
+    queryKey: ["review-response-perf", storeId ?? "all", storeIds ?? null],
     queryFn: async () => {
       let q = supabase.from("google_reviews").select("stars,published_at,response_at,response_text");
       if (storeId) q = q.eq("store_id", storeId);
+      else if (storeIds && storeIds.length > 0) q = q.in("store_id", storeIds);
       const all: any[] = [];
       const pageSize = 1000;
       for (let from = 0; ; from += pageSize) {
