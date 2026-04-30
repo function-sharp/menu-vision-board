@@ -218,13 +218,15 @@ export function StoresTab({ scope = defaultScope }: { scope?: ReviewScope }) {
                       </Link>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
         )}
       </CardContent>
     </Card>
+    </div>
   );
 }
 
