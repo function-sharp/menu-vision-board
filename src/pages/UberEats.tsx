@@ -16,7 +16,23 @@ import { toast } from "sonner";
 
 type ItemLinkFilter = "any" | "item" | "store_fallback";
 
-const PAGE_SIZE = 100;
+type SortDir = "asc" | "desc";
+type StoreSortKey = "name" | "store_group" | "item_count" | "uber_eats_url";
+type ItemSortKey = "name" | "store" | "category" | "price" | "link";
+
+const PAGE_SIZE_OPTIONS = [25, 50, 100, 200];
+
+function compare(a: any, b: any, dir: SortDir): number {
+  const aNull = a === null || a === undefined || a === "";
+  const bNull = b === null || b === undefined || b === "";
+  if (aNull && bNull) return 0;
+  if (aNull) return 1;
+  if (bNull) return -1;
+  const cmp = typeof a === "number" && typeof b === "number"
+    ? a - b
+    : String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: "base" });
+  return dir === "asc" ? cmp : -cmp;
+}
 
 function copyUrl(url: string) {
   navigator.clipboard.writeText(url).then(
