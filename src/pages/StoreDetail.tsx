@@ -160,7 +160,7 @@ export default function StoreDetail() {
         </TabsContent>
 
         <TabsContent value="reviews">
-          <StoreReviewsTab storeId={store.id} />
+          <StoreReviewsTab storeId={store.id} store={store} />
         </TabsContent>
       </Tabs>
     </div>
