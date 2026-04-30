@@ -102,7 +102,7 @@ export default function Upload() {
     <div className="space-y-6 max-w-3xl">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Data Upload</h1>
-        <p className="text-muted-foreground text-sm">Upload an updated Col'Cacchio menu Excel file. This replaces all existing data.</p>
+        <p className="text-muted-foreground text-sm">Excel uploads now <strong>merge</strong> with the database — existing values are kept, blanks get filled. Supabase wins on conflicts.</p>
       </div>
 
       <Card>
@@ -134,7 +134,7 @@ export default function Upload() {
               </div>
             </div>
           )}
-          {status.kind === "success" && <Alert icon={CheckCircle2} text={`Successfully imported ${status.stores} stores and ${status.items} items.`} variant="success" />}
+          {status.kind === "success" && <Alert icon={CheckCircle2} text={`Merged: ${status.storesInserted} new + ${status.storesMerged} existing stores · ${status.itemsInserted} new + ${status.itemsMerged} existing items · ${status.itemsKept} untouched.`} variant="success" />}
           {status.kind === "error" && <Alert icon={AlertCircle} text={status.msg} variant="error" />}
         </CardContent>
       </Card>
@@ -157,7 +157,7 @@ export default function Upload() {
               <Alert
                 icon={CheckCircle2}
                 variant="success"
-                text={`Updated ${syncStatus.storesUpdated} stores · ${syncStatus.promotionsUpserted} promotions saved · ${syncStatus.promotionsRemoved} removed`}
+                text={`Pull: ${syncStatus.storesUpdated} filled, ${syncStatus.skipped} kept (Supabase wins) · ${syncStatus.promotionsUpserted} promotions saved · ${syncStatus.promotionsRemoved} removed`}
               />
               {syncStatus.unmatched.length > 0 && (
                 <div className="rounded-md border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 text-xs">
