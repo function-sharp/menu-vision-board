@@ -254,6 +254,14 @@ export default function UberEats() {
         />
       </div>
 
+      <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900 p-3 text-xs text-amber-800 dark:text-amber-200">
+        <Info className="h-4 w-4 mt-0.5 shrink-0" />
+        <span>
+          Click any URL cell below to edit it inline. Changes save immediately to the database, but
+          the next Excel upload or Airtable refresh may overwrite manual edits if the source data differs.
+        </span>
+      </div>
+
       {/* Stores section */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
