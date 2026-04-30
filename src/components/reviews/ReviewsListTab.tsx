@@ -162,9 +162,16 @@ export function ReviewsListTab({ initialStoreId, scope = defaultScope }: { initi
               <SelectTrigger><SelectValue placeholder="Store" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All stores</SelectItem>
-                {(stores ?? []).filter((s) => places?.some((p) => p.store_id === s.id)).map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                ))}
+                {(stores ?? [])
+                  .filter((s) => places?.some((p) => p.store_id === s.id))
+                  .filter((s) => {
+                    if (scopedStoreId) return s.id === scopedStoreId;
+                    if (scopedStoreIds && scopedStoreIds.length > 0) return scopedStoreIds.includes(s.id);
+                    return true;
+                  })
+                  .map((s) => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                  ))}
               </SelectContent>
             </Select>
             <Select value={stars} onValueChange={setStars}>

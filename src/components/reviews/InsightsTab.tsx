@@ -18,21 +18,32 @@ const PERIODS: { value: ReviewPeriod; label: string }[] = [
   { value: "all", label: "All time" },
 ];
 
-export function InsightsTab() {
+import { useScopedStoreIds, type ReviewScope, defaultScope } from "./ReviewFiltersBar";
+
+export function InsightsTab({ scope = defaultScope }: { scope?: ReviewScope }) {
   const { data: stores } = useStores();
   const { data: places } = useGooglePlaces();
   const navigate = useNavigate();
+  const { storeId: scopedStoreId, storeIds: scopedStoreIds } = useScopedStoreIds(scope);
 
   const [storeId, setStoreId] = useState<string | "all">("all");
   const [period, setPeriod] = useState<ReviewPeriod>("90d");
-  const sid = storeId === "all" ? null : storeId;
+  // Insights work on a single store (or "all"). When the page scope narrows to
+  // exactly one store, default the store dropdown to it; otherwise let the user pick.
+  const sid = storeId === "all" ? (scopedStoreId ?? null) : storeId;
 
   const { data: cached, isLoading: loadingCached } = useReviewInsight(sid, period);
   const generate = useGenerateInsight();
 
   const insight = generate.data?.insight ?? cached;
 
-  const linkedStores = (stores ?? []).filter((s) => places?.some((p) => p.store_id === s.id));
+  const linkedStores = (stores ?? [])
+    .filter((s) => places?.some((p) => p.store_id === s.id))
+    .filter((s) => {
+      if (scopedStoreId) return s.id === scopedStoreId;
+      if (scopedStoreIds && scopedStoreIds.length > 0) return scopedStoreIds.includes(s.id);
+      return true;
+    });
 
   const openReview = (reviewId?: string) => {
     if (!reviewId) return;
