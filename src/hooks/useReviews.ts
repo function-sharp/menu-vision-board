@@ -103,18 +103,14 @@ export const useReviews = (filters: ReviewFilters = {}) =>
   });
 
 // Aggregate stats computed via individual count queries (cheap with indexes)
-export const useReviewStats = (storeId?: string | null) =>
+export const useReviewStats = (storeId?: string | null, storeIds?: string[] | null) =>
   useQuery({
-    queryKey: ["google-review-stats", storeId ?? "all"],
+    queryKey: ["google-review-stats", storeId ?? "all", storeIds ?? null],
     queryFn: async () => {
-      const base = () => {
-        let q = supabase.from("google_reviews").select("stars, response_text, published_at, detailed_food, detailed_service, detailed_atmosphere", { count: "exact" });
-        if (storeId) q = q.eq("store_id", storeId);
-        return q;
-      };
-      // pull a sample for averages — capped to 5000 for performance
+      // pull a sample for averages — capped to 50000 for performance
       let q = supabase.from("google_reviews").select("stars,response_text,published_at,detailed_food,detailed_service,detailed_atmosphere");
       if (storeId) q = q.eq("store_id", storeId);
+      else if (storeIds && storeIds.length > 0) q = q.in("store_id", storeIds);
       const { data, error } = await q.limit(50000);
       if (error) throw error;
       const rows = data ?? [];
