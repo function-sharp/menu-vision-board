@@ -287,9 +287,21 @@ Deno.serve(async (req) => {
       if (!urlToCheck) throw new Error("No URL stored to validate");
       const scraped = await firecrawlScrape(urlToCheck, ["markdown"], { onlyMainContent: false });
       const status = getStatus(scraped);
-      const md = getMarkdown(scraped).toLowerCase();
-      const ok = (status == null || (status >= 200 && status < 400)) && (!nameHint || md.includes(nameHint.toLowerCase().split(" ")[0]));
-      const result = { url: urlToCheck, status, name_match: nameHint ? md.includes(nameHint.toLowerCase().split(" ")[0]) : null };
+      const md = normalize(getMarkdown(scraped));
+      const urlNorm = normalize(decodeURIComponent(urlToCheck));
+      // Tokenize the name hint, drop common/short tokens, require ANY significant token to appear in markdown OR URL slug.
+      const stop = new Set(["col", "cacchio", "colcacchio", "go", "the", "and", "at", "of", "cafe", "restaurant", "pizza"]);
+      const tokens = normalize(nameHint)
+        .split(" ")
+        .filter((t) => t.length >= 3 && !stop.has(t));
+      const nameMatch = nameHint
+        ? (tokens.length === 0
+            ? (md.includes(normalize(nameHint).split(" ")[0] ?? "") ||
+               urlNorm.includes(normalize(nameHint).split(" ")[0] ?? ""))
+            : tokens.some((t) => md.includes(t) || urlNorm.includes(t)))
+        : null;
+      const ok = (status == null || (status >= 200 && status < 400)) && (nameMatch !== false);
+      const result = { url: urlToCheck, status, name_match: nameMatch, tokens_checked: tokens };
       await finish(ok ? "success" : "error", result, ok ? undefined : "Validation failed");
       return json(200, { ok, ...result });
     }
