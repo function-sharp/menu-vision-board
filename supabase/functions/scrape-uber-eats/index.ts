@@ -190,7 +190,7 @@ Deno.serve(async (req) => {
         await finish("error", { search }, "No Uber Eats URL found");
         return json(200, { ok: false, error: "No Uber Eats URL found" });
       }
-      await supa.from("stores").update({ uber_eats_url: url }).eq("id", store.id);
+      await supa.from("stores").update({ uber_eats_url: url, manually_edited_at: new Date().toISOString() }).eq("id", store.id);
       await finish("success", { url });
       return json(200, { ok: true, url });
     }
@@ -224,6 +224,7 @@ Deno.serve(async (req) => {
       if (typeof j.address === "string") update.address = j.address;
       if (typeof j.cuisine === "string") update.cuisine = j.cuisine;
       if (Object.keys(update).length > 0) {
+        update.manually_edited_at = new Date().toISOString();
         await supa.from("stores").update(update).eq("id", store.id);
       }
       await finish("success", { extracted: j, applied: update });
@@ -255,7 +256,7 @@ Deno.serve(async (req) => {
         if (item.deep_link) continue;
         const url = fuzzyMatchItemUrl(item.name, links);
         if (url) {
-          await supa.from("menu_items").update({ deep_link: url }).eq("id", item.id);
+          await supa.from("menu_items").update({ deep_link: url, manually_edited_at: new Date().toISOString() }).eq("id", item.id);
           matched++;
         }
       }
