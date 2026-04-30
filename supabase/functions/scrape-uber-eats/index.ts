@@ -8,7 +8,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const FIRECRAWL_GATEWAY = "https://connector-gateway.lovable.dev/firecrawl/v2";
+const FIRECRAWL_API = "https://api.firecrawl.dev/v2";
 
 type Action =
   | "find_store_url"
@@ -38,13 +38,11 @@ function getEnv(name: string): string {
 }
 
 async function firecrawlSearch(query: string, limit = 5) {
-  const LOVABLE_API_KEY = getEnv("LOVABLE_API_KEY");
   const FIRECRAWL_API_KEY = getEnv("FIRECRAWL_API_KEY");
-  const res = await fetch(`${FIRECRAWL_GATEWAY}/search`, {
+  const res = await fetch(`${FIRECRAWL_API}/search`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      "X-Connection-Api-Key": FIRECRAWL_API_KEY,
+      Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ query, limit }),
@@ -55,13 +53,11 @@ async function firecrawlSearch(query: string, limit = 5) {
 }
 
 async function firecrawlScrape(url: string, formats: any[], extra: Record<string, unknown> = {}) {
-  const LOVABLE_API_KEY = getEnv("LOVABLE_API_KEY");
   const FIRECRAWL_API_KEY = getEnv("FIRECRAWL_API_KEY");
-  const res = await fetch(`${FIRECRAWL_GATEWAY}/scrape`, {
+  const res = await fetch(`${FIRECRAWL_API}/scrape`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      "X-Connection-Api-Key": FIRECRAWL_API_KEY,
+      Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ url, formats, onlyMainContent: true, ...extra }),
