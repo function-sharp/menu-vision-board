@@ -177,9 +177,19 @@ function StatBox({ label, value, sub }: { label: string; value: string; sub?: st
   );
 }
 
+const TREND_RANGES: Array<{ key: string; label: string; months: number }> = [
+  { key: "3m", label: "3M", months: 3 },
+  { key: "6m", label: "6M", months: 6 },
+  { key: "12m", label: "12M", months: 12 },
+  { key: "24m", label: "24M", months: 24 },
+  { key: "36m", label: "36M", months: 36 },
+];
+
 function StoreReviewsTab({ storeId }: { storeId: string }) {
   const { data: stats } = useReviewStats(storeId);
   const { data: reviews, isLoading } = useReviews({ storeId, sortBy: "newest", limit: 100 });
+  const [trendRange, setTrendRange] = useState("24m");
+  const activeRange = TREND_RANGES.find((r) => r.key === trendRange) ?? TREND_RANGES[3];
 
   if (stats && stats.total === 0) {
     return (
