@@ -12,9 +12,9 @@ import { slugify, decodeText } from "@/lib/format";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
-type SyncState = { kind: "idle" } | { kind: "syncing" } | { kind: "done"; storesUpdated: number; promotionsUpserted: number; promotionsRemoved: number; unmatched: string[] } | { kind: "error"; msg: string };
+type SyncState = { kind: "idle" } | { kind: "syncing" } | { kind: "done"; storesUpdated: number; promotionsUpserted: number; promotionsRemoved: number; unmatched: string[]; skipped: number } | { kind: "error"; msg: string };
 
-type Status = { kind: "idle" } | { kind: "parsing" } | { kind: "uploading"; progress: number } | { kind: "success"; stores: number; items: number } | { kind: "error"; msg: string };
+type Status = { kind: "idle" } | { kind: "parsing" } | { kind: "uploading"; progress: number } | { kind: "success"; storesInserted: number; storesMerged: number; itemsInserted: number; itemsMerged: number; itemsKept: number } | { kind: "error"; msg: string };
 
 export default function Upload() {
   const [status, setStatus] = useState<Status>({ kind: "idle" });
@@ -28,17 +28,18 @@ export default function Upload() {
   const handleAirtableSync = async () => {
     setSyncStatus({ kind: "syncing" });
     try {
-      const { data, error } = await supabase.functions.invoke("sync-airtable", { body: {} });
+      const { data, error } = await supabase.functions.invoke("sync-airtable", { body: { direction: "pull" } });
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.error ?? "Sync failed");
       setSyncStatus({
         kind: "done",
-        storesUpdated: data.stores_updated ?? 0,
+        storesUpdated: data.stores_filled ?? 0,
+        skipped: data.stores_skipped_supabase_wins ?? 0,
         promotionsUpserted: data.promotions_upserted ?? 0,
         promotionsRemoved: data.promotions_removed ?? 0,
         unmatched: data.stores_unmatched ?? [],
       });
-      toast.success(`Synced ${data.stores_updated} stores · ${data.promotions_upserted} promos`);
+      toast.success(`Pulled: ${data.stores_filled} filled, ${data.stores_skipped_supabase_wins} kept (Supabase wins)`);
       qc.invalidateQueries();
     } catch (e: any) {
       console.error(e);
@@ -62,71 +63,32 @@ export default function Upload() {
       const missing = required.filter((r) => !(r in rows[0]));
       if (missing.length) throw new Error(`Missing columns: ${missing.join(", ")}`);
 
-      // Build stores map
-      const storeMap = new Map<string, any>();
-      for (const r of rows) {
-        const name = String(r.store_name ?? "").trim();
-        if (!name || storeMap.has(name)) continue;
-        storeMap.set(name, {
-          name, slug: slugify(name),
-          store_group: r.group ?? null,
-          cuisine: r.cuisine ?? null,
-          rating: r.rating != null ? Number(r.rating) : null,
-          rating_count: r.rating_count != null ? Number(r.rating_count) : null,
-          telephone: r.telephone != null ? String(r.telephone) : null,
-          address: r.address ?? null,
-          price_range: r.price_range ?? null,
-          store_url: r.store_url ?? null,
-          item_count: 0,
-        });
-      }
-      // count items per store
-      for (const r of rows) {
-        const s = storeMap.get(String(r.store_name ?? "").trim());
-        if (s) s.item_count++;
-      }
+      // Decode item names client-side so the edge function gets clean strings
+      const cleanRows = rows.map((r) => ({
+        ...r,
+        item_name: decodeText(String(r.item_name ?? "")).trim() || "Unnamed",
+        store_name: String(r.store_name ?? "").trim(),
+      }));
 
-      setStatus({ kind: "uploading", progress: 5 });
+      setStatus({ kind: "uploading", progress: 50 });
 
-      // Wipe existing data
-      await supabase.from("menu_items").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      await supabase.from("stores").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-
-      setStatus({ kind: "uploading", progress: 15 });
-
-      // Insert stores
-      const storesArr = Array.from(storeMap.values());
-      const { data: insertedStores, error: sErr } = await supabase.from("stores").insert(storesArr).select("id, name");
-      if (sErr) throw sErr;
-
-      const idByName = new Map(insertedStores!.map((s: any) => [s.name, s.id]));
-      setStatus({ kind: "uploading", progress: 30 });
-
-      // Insert items in chunks
-      const items = rows.map((r) => ({
-        store_id: idByName.get(String(r.store_name ?? "").trim()),
-        category: r.category ?? null,
-        name: decodeText(String(r.item_name ?? "")).trim() || "Unnamed",
-        description: r.item_description ?? null,
-        price: r.item_price != null ? Number(r.item_price) : null,
-        currency: r.item_currency ?? "ZAR",
-        deep_link: r.item_deep_link ?? null,
-      })).filter((i) => i.store_id);
-
-      const chunkSize = 500;
-      for (let i = 0; i < items.length; i += chunkSize) {
-        const chunk = items.slice(i, i + chunkSize);
-        const { error } = await supabase.from("menu_items").insert(chunk);
-        if (error) throw error;
-        setStatus({ kind: "uploading", progress: 30 + Math.round((i / items.length) * 65) });
-      }
-
-      await supabase.from("uploads").insert({
-        store_count: storesArr.length, item_count: items.length, note: note || null, filename: file.name,
+      const { data, error } = await supabase.functions.invoke("merge-excel", {
+        body: { rows: cleanRows, filename: file.name, note: note || undefined },
       });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error ?? "Merge failed");
 
-      setStatus({ kind: "success", stores: storesArr.length, items: items.length });
-      toast.success(`Imported ${storesArr.length} stores and ${items.length} items`);
+      setStatus({
+        kind: "success",
+        storesInserted: data.stores_inserted,
+        storesMerged: data.stores_merged,
+        itemsInserted: data.items_inserted,
+        itemsMerged: data.items_merged,
+        itemsKept: data.items_kept_untouched,
+      });
+      toast.success(
+        `Merged: ${data.stores_inserted}+${data.stores_merged} stores · ${data.items_inserted}+${data.items_merged} items`,
+      );
       qc.invalidateQueries();
       setNote("");
     } catch (e: any) {
