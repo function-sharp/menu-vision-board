@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Store, Utensils, GitCompare, BarChart3, Upload, Pizza, Megaphone } from "lucide-react";
+import { LayoutDashboard, Store, Utensils, GitCompare, BarChart3, Upload, Pizza, Megaphone, ExternalLink } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
