@@ -203,7 +203,24 @@ function StoreReviewsTab({ storeId }: { storeId: string }) {
 
   return (
     <div className="space-y-4">
-      <ReviewTrendChart storeId={storeId} months={24} title="Review trend — last 24 months" />
+      <div className="flex items-center justify-end gap-1 flex-wrap">
+        {TREND_RANGES.map((r) => (
+          <Button
+            key={r.key}
+            variant={trendRange === r.key ? "default" : "outline"}
+            size="sm"
+            onClick={() => setTrendRange(r.key)}
+            className="h-7 px-2.5 text-xs"
+          >
+            {r.label}
+          </Button>
+        ))}
+      </div>
+      <ReviewTrendChart
+        storeId={storeId}
+        months={activeRange.months}
+        title={`Review trend — last ${activeRange.months} months`}
+      />
       <div className="grid md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4 space-y-2">
