@@ -12,6 +12,7 @@ import ItemComparison from "./pages/ItemComparison";
 import Analytics from "./pages/Analytics";
 import Upload from "./pages/Upload";
 import Promotions from "./pages/Promotions";
+import UberEats from "./pages/UberEats";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 60_000 } } });
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/compare" element={<ItemComparison />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/promotions" element={<Promotions />} />
+            <Route path="/uber-eats" element={<UberEats />} />
             <Route path="/upload" element={<Upload />} />
           </Route>
           <Route path="*" element={<NotFound />} />

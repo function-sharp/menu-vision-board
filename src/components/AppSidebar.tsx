@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Store, Utensils, GitCompare, BarChart3, Upload, Pizza, Megaphone } from "lucide-react";
+import { LayoutDashboard, Store, Utensils, GitCompare, BarChart3, Upload, Pizza, Megaphone, ExternalLink } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -20,6 +20,7 @@ const items = [
   { title: "Item Comparison", url: "/compare", icon: GitCompare },
   { title: "Categories & Pricing", url: "/analytics", icon: BarChart3 },
   { title: "Promotions", url: "/promotions", icon: Megaphone },
+  { title: "Uber Eats", url: "/uber-eats", icon: ExternalLink },
   { title: "Data Upload", url: "/upload", icon: Upload },
 ];
 
