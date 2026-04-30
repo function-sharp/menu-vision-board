@@ -37,67 +37,9 @@ const STORE_COLORS = [
 
 type StoreInfo = { id: string; name: string };
 
-// Fetch monthly buckets for a single store: count, avg, replyRate, sentiment %s
-async function fetchStoreTrend(storeId: string, months: number) {
-  const since = new Date();
-  since.setMonth(since.getMonth() - months);
-  const all: any[] = [];
-  const pageSize = 1000;
-  for (let from = 0; ; from += pageSize) {
-    const { data, error } = await supabase
-      .from("google_reviews")
-      .select("stars,published_at,response_text")
-      .eq("store_id", storeId)
-      .gte("published_at", since.toISOString())
-      .range(from, from + pageSize - 1);
-    if (error) throw error;
-    if (!data || data.length === 0) break;
-    all.push(...data);
-    if (data.length < pageSize) break;
-  }
-  const buckets = new Map<string, { count: number; sum: number; n: number; replied: number; pos: number; neu: number; neg: number }>();
-  for (const r of all) {
-    if (!r.published_at) continue;
-    const d = new Date(r.published_at);
-    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
-    const b = buckets.get(key) ?? { count: 0, sum: 0, n: 0, replied: 0, pos: 0, neu: 0, neg: 0 };
-    b.count++;
-    if (r.stars != null) {
-      b.sum += r.stars;
-      b.n++;
-      if (r.stars >= 4) b.pos++;
-      else if (r.stars === 3) b.neu++;
-      else b.neg++;
-    }
-    if (r.response_text) b.replied++;
-    buckets.set(key, b);
-  }
-  const series: { month: string; label: string; count: number; avg: number; positivePct: number }[] = [];
-  for (let i = months - 1; i >= 0; i--) {
-    const d = new Date();
-    d.setUTCDate(1);
-    d.setUTCMonth(d.getUTCMonth() - i);
-    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
-    const b = buckets.get(key);
-    const ratedTotal = b ? b.pos + b.neu + b.neg : 0;
-    series.push({
-      month: key,
-      label: d.toLocaleDateString(undefined, { month: "short", year: "2-digit" }),
-      count: b?.count ?? 0,
-      avg: b?.n ? +(b.sum / b.n).toFixed(2) : 0,
-      positivePct: ratedTotal ? +((b!.pos / ratedTotal) * 100).toFixed(1) : 0,
-    });
-  }
-  // KPI rollup
-  const totalReviews = all.length;
-  const ratedAll = all.filter((r) => r.stars != null);
-  const avgRating = ratedAll.length ? ratedAll.reduce((a, r) => a + r.stars, 0) / ratedAll.length : 0;
-  const replied = all.filter((r) => r.response_text).length;
-  const replyRate = totalReviews ? replied / totalReviews : 0;
-  const last30Cutoff = Date.now() - 30 * 86400_000;
-  const last30 = all.filter((r) => r.published_at && new Date(r.published_at).getTime() >= last30Cutoff).length;
-  return { series, kpi: { totalReviews, avgRating, replyRate, last30 } };
-}
+// fetchStoreTrend lives in @/lib/reviewKpis so single-store and comparison
+// exports compute KPIs from the same data source with identical math.
+
 
 export function ComparisonPanel({
   selectedStores,
