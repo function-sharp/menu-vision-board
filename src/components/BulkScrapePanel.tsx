@@ -17,6 +17,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { runScrape, ScrapeAction } from "@/hooks/useScrape";
+import { logActivity } from "@/lib/activityLog";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -230,9 +231,21 @@ function AirtableTab() {
       if (!data?.ok) throw new Error(data?.error ?? "Pull failed");
       setLastResult({ kind: "pull", data });
       toast.success(`Pull: ${data.stores_filled} filled, ${data.stores_skipped_supabase_wins} kept`);
+      void logActivity({
+        action: "sync.airtable.pull",
+        entity_type: "sync",
+        entity_label: "Airtable → Supabase",
+        details: {
+          stores_filled: data.stores_filled,
+          stores_skipped: data.stores_skipped_supabase_wins,
+          promotions_upserted: data.promotions_upserted,
+          promotions_removed: data.promotions_removed,
+        },
+      });
       qc.invalidateQueries();
     } catch (e: any) {
       toast.error(`Pull failed: ${e.message}`);
+      void logActivity({ action: "sync.airtable.pull.failed", entity_type: "sync", details: { error: e.message } });
     } finally {
       setPulling(false);
     }
@@ -246,12 +259,20 @@ function AirtableTab() {
       setLastResult({ kind: "push", data });
       if (data?.ok) {
         toast.success(`Push: ${data.stores_pushed} updated in Airtable`);
+        void logActivity({
+          action: "sync.airtable.push",
+          entity_type: "sync",
+          entity_label: "Supabase → Airtable",
+          details: { stores_pushed: data.stores_pushed },
+        });
       } else {
         toast.warning(data?.error ?? "Push completed with errors");
+        void logActivity({ action: "sync.airtable.push.partial", entity_type: "sync", details: { error: data?.error } });
       }
       qc.invalidateQueries();
     } catch (e: any) {
       toast.error(`Push failed: ${e.message}`);
+      void logActivity({ action: "sync.airtable.push.failed", entity_type: "sync", details: { error: e.message } });
     } finally {
       setPushing(false);
     }
