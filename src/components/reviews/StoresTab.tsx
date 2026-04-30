@@ -108,7 +108,24 @@ export function StoresTab({ scope = defaultScope }: { scope?: ReviewScope }) {
     else { setSortKey(k); setSortDir(k === "name" || k === "group" ? "asc" : "desc"); }
   };
 
+  const selectedStoreInfos = useMemo(() => {
+    const map = new Map((stores ?? []).map((s) => [s.id, s.name] as const));
+    return selectedIds
+      .filter((id) => map.has(id))
+      .map((id) => ({ id, name: map.get(id)! }));
+  }, [selectedIds, stores]);
+
   return (
+    <div className="space-y-4">
+      {selectedStoreInfos.length > 0 && (
+        <ComparisonPanel
+          selectedStores={selectedStoreInfos}
+          range={compareRange}
+          onRangeChange={setCompareRange}
+          onRemove={(id) => setSelectedIds((prev) => prev.filter((x) => x !== id))}
+          onClear={() => setSelectedIds([])}
+        />
+      )}
     <Card>
       <CardContent className="p-4 space-y-4">
         <div className="grid md:grid-cols-4 gap-3">
