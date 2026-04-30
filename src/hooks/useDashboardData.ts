@@ -1,6 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Store, MenuItem } from "@/types";
+import type { Store, MenuItem, Promotion } from "@/types";
+
+export const usePromotions = () =>
+  useQuery({
+    queryKey: ["promotions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("promotions")
+        .select("*")
+        .order("start_date", { ascending: false, nullsFirst: false });
+      if (error) throw error;
+      return (data ?? []) as Promotion[];
+    },
+  });
 
 export const useStores = () =>
   useQuery({
