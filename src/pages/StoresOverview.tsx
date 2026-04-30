@@ -298,6 +298,8 @@ export default function StoresOverview() {
                     <TableHead className="text-right cursor-pointer select-none" onClick={() => toggleSort("rating")}>
                       Rating <SortIcon k="rating" />
                     </TableHead>
+                    <TableHead className="text-right">Google ★</TableHead>
+                    <TableHead className="text-right">Google #</TableHead>
                     <TableHead className="w-[140px] text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -347,6 +349,17 @@ export default function StoresOverview() {
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {r.google_rating != null ? (
+                          <Link to={`/reviews?tab=stores`} className="inline-flex items-center gap-1 text-sm hover:text-primary">
+                            <Star className="h-3 w-3 fill-current text-primary" />
+                            <span className="tabular-nums">{r.google_rating.toFixed(2)}</span>
+                          </Link>
+                        ) : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-xs text-muted-foreground">
+                        {r.google_reviews != null ? r.google_reviews.toLocaleString() : "—"}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="inline-flex gap-1">
