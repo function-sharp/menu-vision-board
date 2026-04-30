@@ -93,16 +93,23 @@ export function StoresTab({ scope = defaultScope }: { scope?: ReviewScope }) {
   return (
     <Card>
       <CardContent className="p-4 space-y-4">
-        <div className="grid md:grid-cols-3 gap-3">
+        <div className="grid md:grid-cols-4 gap-3">
           <div className="relative md:col-span-2">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search stores…" value={query} onChange={(e) => setQuery(e.target.value)} className="pl-9" />
+            <Input placeholder="Search stores, city, group…" value={query} onChange={(e) => setQuery(e.target.value)} className="pl-9" />
           </div>
           <Select value={groupFilter} onValueChange={setGroupFilter}>
             <SelectTrigger><SelectValue placeholder="Group" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All groups</SelectItem>
               {groups.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={cityFilter} onValueChange={setCityFilter}>
+            <SelectTrigger><SelectValue placeholder="City" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All cities</SelectItem>
+              {cities.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
