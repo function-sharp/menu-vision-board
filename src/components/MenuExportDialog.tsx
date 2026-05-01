@@ -4,14 +4,18 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Download, FileText, FileSpreadsheet, Info } from "lucide-react";
 import {
+  ALL_COLUMNS,
   buildMenuCsv,
+  DEFAULT_COLUMNS,
   downloadCsv,
   exportMenuPdf,
   filterItemsByDateRange,
   formatRangeLabel,
+  type ColumnKey,
   type MenuExportItem,
 } from "@/lib/menuExport";
 import { logActivity } from "@/lib/activityLog";
@@ -52,6 +56,14 @@ export function MenuExportDialog({ trigger, store, items }: Props) {
   const [from, setFrom] = useState<string>("");
   const [to, setTo] = useState<string>(today());
   const [busy, setBusy] = useState(false);
+  const [columns, setColumns] = useState<ColumnKey[]>(DEFAULT_COLUMNS);
+
+  const toggleColumn = (key: ColumnKey, checked: boolean) => {
+    setColumns((prev) => {
+      if (checked) return prev.includes(key) ? prev : [...prev, key];
+      return prev.filter((k) => k !== key);
+    });
+  };
 
   // Resolve effective from/to based on the selected preset
   const { effFrom, effTo } = useMemo(() => {
@@ -92,6 +104,7 @@ export function MenuExportDialog({ trigger, store, items }: Props) {
         storeAddress: store.address ?? null,
         rangeFrom: effFrom,
         rangeTo: effTo,
+        columns,
       };
       if (format === "pdf") {
         exportMenuPdf(filtered, meta);
@@ -106,7 +119,7 @@ export function MenuExportDialog({ trigger, store, items }: Props) {
         entity_type: "store",
         entity_id: store.id,
         entity_label: store.name,
-        details: { format, range: formatRangeLabel(effFrom, effTo), count: filtered.length },
+        details: { format, range: formatRangeLabel(effFrom, effTo), count: filtered.length, columns },
       }).catch(() => undefined);
       toast.success(`${format.toUpperCase()} exported · ${filtered.length} items`);
       setOpen(false);
@@ -127,7 +140,7 @@ export function MenuExportDialog({ trigger, store, items }: Props) {
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Export menu & pricing</DialogTitle>
           <DialogDescription>
@@ -198,7 +211,57 @@ export function MenuExportDialog({ trigger, store, items }: Props) {
             )}
           </div>
 
-          {/* Preview */}
+          {/* Columns */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Fields to include</Label>
+              <div className="flex gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs"
+                  onClick={() => setColumns(ALL_COLUMNS.map((c) => c.key))}
+                >
+                  All
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs"
+                  onClick={() => setColumns(DEFAULT_COLUMNS)}
+                >
+                  Reset
+                </Button>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-1 rounded-md border p-2">
+              {ALL_COLUMNS.map((col) => {
+                const checked = columns.includes(col.key);
+                const disabled = !!col.required;
+                return (
+                  <Label
+                    key={col.key}
+                    htmlFor={`col-${col.key}`}
+                    className={`flex items-center gap-2 rounded px-2 py-1.5 text-sm transition ${
+                      disabled ? "opacity-70 cursor-not-allowed" : "cursor-pointer hover:bg-accent"
+                    }`}
+                  >
+                    <Checkbox
+                      id={`col-${col.key}`}
+                      checked={checked}
+                      disabled={disabled}
+                      onCheckedChange={(v) => toggleColumn(col.key, v === true)}
+                    />
+                    <span>{col.label}</span>
+                    {disabled && <span className="text-[10px] text-muted-foreground ml-auto">Required</span>}
+                  </Label>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="rounded-md border bg-muted/40 p-3 flex items-start gap-2">
             <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
             <div className="text-xs text-muted-foreground space-y-1">
