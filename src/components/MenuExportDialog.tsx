@@ -56,6 +56,14 @@ export function MenuExportDialog({ trigger, store, items }: Props) {
   const [from, setFrom] = useState<string>("");
   const [to, setTo] = useState<string>(today());
   const [busy, setBusy] = useState(false);
+  const [columns, setColumns] = useState<ColumnKey[]>(DEFAULT_COLUMNS);
+
+  const toggleColumn = (key: ColumnKey, checked: boolean) => {
+    setColumns((prev) => {
+      if (checked) return prev.includes(key) ? prev : [...prev, key];
+      return prev.filter((k) => k !== key);
+    });
+  };
 
   // Resolve effective from/to based on the selected preset
   const { effFrom, effTo } = useMemo(() => {
