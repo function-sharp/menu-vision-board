@@ -211,7 +211,57 @@ export function MenuExportDialog({ trigger, store, items }: Props) {
             )}
           </div>
 
-          {/* Preview */}
+          {/* Columns */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Fields to include</Label>
+              <div className="flex gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs"
+                  onClick={() => setColumns(ALL_COLUMNS.map((c) => c.key))}
+                >
+                  All
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs"
+                  onClick={() => setColumns(DEFAULT_COLUMNS)}
+                >
+                  Reset
+                </Button>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-1 rounded-md border p-2">
+              {ALL_COLUMNS.map((col) => {
+                const checked = columns.includes(col.key);
+                const disabled = !!col.required;
+                return (
+                  <Label
+                    key={col.key}
+                    htmlFor={`col-${col.key}`}
+                    className={`flex items-center gap-2 rounded px-2 py-1.5 text-sm transition ${
+                      disabled ? "opacity-70 cursor-not-allowed" : "cursor-pointer hover:bg-accent"
+                    }`}
+                  >
+                    <Checkbox
+                      id={`col-${col.key}`}
+                      checked={checked}
+                      disabled={disabled}
+                      onCheckedChange={(v) => toggleColumn(col.key, v === true)}
+                    />
+                    <span>{col.label}</span>
+                    {disabled && <span className="text-[10px] text-muted-foreground ml-auto">Required</span>}
+                  </Label>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="rounded-md border bg-muted/40 p-3 flex items-start gap-2">
             <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
             <div className="text-xs text-muted-foreground space-y-1">
