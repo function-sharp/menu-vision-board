@@ -17,6 +17,7 @@ import { SentimentTrendChart } from "@/components/reviews/SentimentTrendChart";
 import { formatZAR, decodeText } from "@/lib/format";
 import { ArrowLeft, Star, MapPin, Phone, Search, ExternalLink, MessageSquare, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MenuExportDialog } from "@/components/MenuExportDialog";
 
 export default function StoreDetail() {
   const { slug } = useParams();
@@ -111,9 +112,21 @@ export default function StoreDetail() {
         </TabsList>
 
         <TabsContent value="menu" className="space-y-4">
-          <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search this menu..." value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="relative max-w-sm flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search this menu..." value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
+            </div>
+            <MenuExportDialog
+              store={{
+                id: store.id,
+                name: store.name,
+                slug: store.slug,
+                store_group: store.store_group,
+                address: store.address,
+              }}
+              items={items as any}
+            />
           </div>
 
           {il ? (
