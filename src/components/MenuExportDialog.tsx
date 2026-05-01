@@ -104,6 +104,7 @@ export function MenuExportDialog({ trigger, store, items }: Props) {
         storeAddress: store.address ?? null,
         rangeFrom: effFrom,
         rangeTo: effTo,
+        columns,
       };
       if (format === "pdf") {
         exportMenuPdf(filtered, meta);
@@ -118,7 +119,7 @@ export function MenuExportDialog({ trigger, store, items }: Props) {
         entity_type: "store",
         entity_id: store.id,
         entity_label: store.name,
-        details: { format, range: formatRangeLabel(effFrom, effTo), count: filtered.length },
+        details: { format, range: formatRangeLabel(effFrom, effTo), count: filtered.length, columns },
       }).catch(() => undefined);
       toast.success(`${format.toUpperCase()} exported · ${filtered.length} items`);
       setOpen(false);
