@@ -1,5 +1,6 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Store, Utensils, GitCompare, BarChart3, Upload, Pizza, Megaphone, ExternalLink, LogOut, History, TableProperties, MessageSquare } from "lucide-react";
+import { LayoutDashboard, Store, Utensils, GitCompare, BarChart3, Upload, Megaphone, ExternalLink, LogOut, History, TableProperties, MessageSquare } from "lucide-react";
+import { BrandLogo } from "./BrandLogo";
 import {
   Sidebar,
   SidebarContent,
@@ -47,16 +48,8 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border">
-        <div className="flex items-center gap-2 px-2 py-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Pizza className="h-5 w-5" />
-          </div>
-          {!collapsed && (
-            <div className="flex flex-col leading-tight">
-              <span className="text-sm font-semibold text-sidebar-foreground">Col'Cacchio</span>
-              <span className="text-xs text-sidebar-foreground/60">Menu Dashboard</span>
-            </div>
-          )}
+        <div className="px-2 py-3">
+          <BrandLogo size="sm" showWordmark={!collapsed} onDark />
         </div>
       </SidebarHeader>
       <SidebarContent>
