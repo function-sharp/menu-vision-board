@@ -6,6 +6,7 @@ import { useStores, useAllItems } from "@/hooks/useDashboardData";
 import { Upload, Search } from "lucide-react";
 import { Button } from "./ui/button";
 import { GlobalSearch } from "./GlobalSearch";
+import { BrandLogo } from "./BrandLogo";
 
 export default function AppLayout() {
   const { data: stores } = useStores();
@@ -31,7 +32,11 @@ export default function AppLayout() {
           <header className="h-14 flex items-center justify-between border-b bg-card px-4 sticky top-0 z-10 gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <SidebarTrigger />
-              <div className="hidden md:flex items-center gap-4 text-sm">
+              <Link to="/" className="flex items-center hover:opacity-80 transition-opacity" aria-label="Col'Cacchio Menu Dashboard home">
+                <BrandLogo size="sm" showWordmark={false} className="sm:hidden" />
+                <BrandLogo size="sm" showWordmark className="hidden sm:flex" />
+              </Link>
+              <div className="hidden lg:flex items-center gap-4 text-sm pl-2 border-l">
                 <span className="text-muted-foreground">
                   <span className="font-semibold text-foreground">{stores?.length ?? "—"}</span> stores
                 </span>

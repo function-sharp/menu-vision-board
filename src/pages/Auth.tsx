@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Pizza } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -40,11 +40,11 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="space-y-3 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Pizza className="h-6 w-6" />
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-md bg-primary text-primary-foreground overflow-hidden">
+            <img src="/favicon.png" alt="Col'Cacchio" className="h-10 w-10 object-contain" />
           </div>
           <div>
-            <CardTitle>Col'Cacchio Dashboard</CardTitle>
+            <CardTitle>Col'Cacchio Menu Dashboard</CardTitle>
             <CardDescription>Sign in to continue</CardDescription>
           </div>
         </CardHeader>
