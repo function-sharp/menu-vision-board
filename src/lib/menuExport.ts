@@ -20,7 +20,38 @@ export interface MenuExportMeta {
   rangeFrom?: string;
   rangeTo?: string;
   generatedAt?: Date;
+  /** Optional set of fields to include in the output. Defaults to all common fields. */
+  columns?: ColumnKey[];
 }
+
+export type ColumnKey =
+  | "category"
+  | "name"
+  | "description"
+  | "price"
+  | "currency"
+  | "created_at"
+  | "manually_edited_at";
+
+export const ALL_COLUMNS: { key: ColumnKey; label: string; required?: boolean }[] = [
+  { key: "name", label: "Item name", required: true },
+  { key: "category", label: "Category" },
+  { key: "description", label: "Description" },
+  { key: "price", label: "Price" },
+  { key: "currency", label: "Currency" },
+  { key: "created_at", label: "Created date" },
+  { key: "manually_edited_at", label: "Last edited date" },
+];
+
+export const DEFAULT_COLUMNS: ColumnKey[] = [
+  "category",
+  "name",
+  "description",
+  "price",
+  "currency",
+  "created_at",
+  "manually_edited_at",
+];
 
 // ---------- Filtering ----------
 
