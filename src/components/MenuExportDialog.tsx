@@ -4,14 +4,18 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Download, FileText, FileSpreadsheet, Info } from "lucide-react";
 import {
+  ALL_COLUMNS,
   buildMenuCsv,
+  DEFAULT_COLUMNS,
   downloadCsv,
   exportMenuPdf,
   filterItemsByDateRange,
   formatRangeLabel,
+  type ColumnKey,
   type MenuExportItem,
 } from "@/lib/menuExport";
 import { logActivity } from "@/lib/activityLog";
