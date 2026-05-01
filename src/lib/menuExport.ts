@@ -169,19 +169,28 @@ function statsFor(items: MenuExportItem[]): GroupStats {
 
 export function exportMenuPdf(items: MenuExportItem[], meta: MenuExportMeta): void {
   const generatedAt = meta.generatedAt ?? new Date();
+  const cols = new Set<ColumnKey>(meta.columns && meta.columns.length ? meta.columns : DEFAULT_COLUMNS);
+  cols.add("name"); // always present
+  const showCategory = cols.has("category");
+  const showDescription = cols.has("description");
+  const showPrice = cols.has("price");
+  const showCurrency = cols.has("currency");
+  const showCreated = cols.has("created_at");
+  const showEdited = cols.has("manually_edited_at");
+  const showMetaLine = showCreated || showEdited;
+
   const pdf = new jsPDF({ unit: "pt", format: "a4", orientation: "portrait" });
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
   const margin = 36;
   const contentWidth = pageWidth - margin * 2;
-  const bottomLimit = pageHeight - margin - 18; // leave footer room
+  const bottomLimit = pageHeight - margin - 18;
 
   const rangeLabel = formatRangeLabel(meta.rangeFrom, meta.rangeTo);
 
-  // Group items by category
   const byCat = new Map<string, MenuExportItem[]>();
   for (const i of items) {
-    const c = i.category || "Other";
+    const c = showCategory ? (i.category || "Other") : "All items";
     if (!byCat.has(c)) byCat.set(c, []);
     byCat.get(c)!.push(i);
   }
@@ -189,7 +198,6 @@ export function exportMenuPdf(items: MenuExportItem[], meta: MenuExportMeta): vo
 
   const overall = statsFor(items);
 
-  // ---- Page header (drawn on every page) ----
   const drawHeader = () => {
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(15);
@@ -208,22 +216,27 @@ export function exportMenuPdf(items: MenuExportItem[], meta: MenuExportMeta): vo
   drawHeader();
   let cursorY = margin + 52;
 
-  // ---- Summary box ----
   const summaryRows: Array<[string, string]> = [
     ["Items in report", String(overall.count)],
     ["Categories", String(categories.length)],
-    ["Average price", overall.avg != null ? formatZAR(overall.avg) : "—"],
-    ["Price range", overall.min != null && overall.max != null ? `${formatZAR(overall.min)} – ${formatZAR(overall.max)}` : "—"],
   ];
+  if (showPrice) {
+    summaryRows.push(["Average price", overall.avg != null ? formatZAR(overall.avg) : "—"]);
+    summaryRows.push([
+      "Price range",
+      overall.min != null && overall.max != null
+        ? `${formatZAR(overall.min)} – ${formatZAR(overall.max)}`
+        : "—",
+    ]);
+  }
   const sumRowH = 18;
   const sumColW = contentWidth / 2;
-  pdf.setDrawColor(220);
+  const sumRowsCount = Math.ceil(summaryRows.length / 2);
   pdf.setLineWidth(0.5);
-  pdf.rect(margin, cursorY, contentWidth, sumRowH * 2);
   pdf.setFillColor(245, 245, 247);
-  pdf.rect(margin, cursorY, contentWidth, sumRowH * 2, "F");
+  pdf.rect(margin, cursorY, contentWidth, sumRowH * sumRowsCount, "F");
   pdf.setDrawColor(220);
-  pdf.rect(margin, cursorY, contentWidth, sumRowH * 2);
+  pdf.rect(margin, cursorY, contentWidth, sumRowH * sumRowsCount);
   summaryRows.forEach((r, idx) => {
     const col = idx % 2;
     const row = Math.floor(idx / 2);
@@ -238,13 +251,12 @@ export function exportMenuPdf(items: MenuExportItem[], meta: MenuExportMeta): vo
     pdf.setTextColor(0);
     pdf.text(r[1], x + 100, y);
   });
-  cursorY += sumRowH * 2 + 16;
+  cursorY += sumRowH * sumRowsCount + 16;
 
-  // ---- Column layout for the menu table ----
   const colCategoryX = margin;
   const colItemX = margin;
-  const priceColW = 60;
-  const itemColW = contentWidth - priceColW - 8;
+  const priceColW = showPrice ? 60 : 0;
+  const itemColW = contentWidth - priceColW - (showPrice ? 8 : 0);
 
   const ensureSpace = (needed: number) => {
     if (cursorY + needed > bottomLimit) {
@@ -266,18 +278,19 @@ export function exportMenuPdf(items: MenuExportItem[], meta: MenuExportMeta): vo
     pdf.setFontSize(8);
     pdf.setTextColor(100);
     const right =
-      s.min != null && s.max != null
+      showPrice && s.min != null && s.max != null
         ? `${s.count} items · ${formatZAR(s.min)} – ${formatZAR(s.max)}`
         : `${s.count} items`;
     pdf.text(right, margin + contentWidth - 8, cursorY + 15, { align: "right" });
     cursorY += 22;
 
-    // Column header
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(8);
     pdf.setTextColor(120);
     pdf.text("ITEM", colItemX + 4, cursorY + 11);
-    pdf.text("PRICE", margin + contentWidth - 4, cursorY + 11, { align: "right" });
+    if (showPrice) {
+      pdf.text("PRICE", margin + contentWidth - 4, cursorY + 11, { align: "right" });
+    }
     pdf.setDrawColor(230);
     pdf.line(margin, cursorY + 14, margin + contentWidth, cursorY + 14);
     cursorY += 16;
@@ -287,14 +300,27 @@ export function exportMenuPdf(items: MenuExportItem[], meta: MenuExportMeta): vo
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(10);
     const name = decodeText(item.name);
-    const desc = item.description ? decodeText(item.description).replace(/\s+/g, " ") : "";
+    const desc = showDescription && item.description
+      ? decodeText(item.description).replace(/\s+/g, " ")
+      : "";
 
     const nameLines = pdf.splitTextToSize(name, itemColW - 8) as string[];
     const descLines = desc
       ? (pdf.setFontSize(8), pdf.splitTextToSize(desc, itemColW - 8) as string[]).slice(0, 3)
       : [];
+
+    const metaParts: string[] = [];
+    if (showCreated && item.created_at) {
+      metaParts.push(`Created ${new Date(item.created_at).toISOString().slice(0, 10)}`);
+    }
+    if (showEdited && item.manually_edited_at) {
+      metaParts.push(`Edited ${new Date(item.manually_edited_at).toISOString().slice(0, 10)}`);
+    }
+    const metaLine = showMetaLine && metaParts.length ? metaParts.join(" · ") : "";
+
     pdf.setFontSize(10);
-    const rowH = Math.max(20, nameLines.length * 12 + descLines.length * 9 + 6);
+    const metaLineH = metaLine ? 11 : 0;
+    const rowH = Math.max(20, nameLines.length * 12 + descLines.length * 9 + metaLineH + 6);
 
     ensureSpace(rowH);
 
@@ -303,26 +329,36 @@ export function exportMenuPdf(items: MenuExportItem[], meta: MenuExportMeta): vo
       pdf.rect(margin, cursorY, contentWidth, rowH, "F");
     }
 
-    // Name
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(10);
     pdf.setTextColor(20);
     pdf.text(nameLines, colItemX + 4, cursorY + 12);
 
-    // Description
+    let textY = cursorY + 12 + nameLines.length * 12;
+
     if (descLines.length) {
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(8);
       pdf.setTextColor(110);
-      pdf.text(descLines, colItemX + 4, cursorY + 12 + nameLines.length * 12);
+      pdf.text(descLines, colItemX + 4, textY);
+      textY += descLines.length * 9;
     }
 
-    // Price (right-aligned, monospace for clean digits)
-    pdf.setFont("courier", "bold");
-    pdf.setFontSize(10);
-    pdf.setTextColor(0);
-    const priceText = item.price != null ? formatZAR(Number(item.price)) : "—";
-    pdf.text(priceText, margin + contentWidth - 4, cursorY + 12, { align: "right" });
+    if (metaLine) {
+      pdf.setFont("helvetica", "italic");
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(140);
+      pdf.text(metaLine, colItemX + 4, textY + 2);
+    }
+
+    if (showPrice) {
+      pdf.setFont("courier", "bold");
+      pdf.setFontSize(10);
+      pdf.setTextColor(0);
+      const currency = showCurrency && item.currency && item.currency !== "ZAR" ? ` ${item.currency}` : "";
+      const priceText = item.price != null ? `${formatZAR(Number(item.price))}${currency}` : "—";
+      pdf.text(priceText, margin + contentWidth - 4, cursorY + 12, { align: "right" });
+    }
 
     pdf.setDrawColor(232);
     pdf.line(margin, cursorY + rowH, margin + contentWidth, cursorY + rowH);
