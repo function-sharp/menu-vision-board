@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAllItems, useStores } from "@/hooks/useDashboardData";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,12 +45,29 @@ export default function MenuBrowser() {
   const { data: items, isLoading } = useAllItems();
   const { data: stores } = useStores();
   const qc = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [filters, setFilters] = useState<Filters>(EMPTY);
   const [page, setPage] = useState(0);
   const [saveOpen, setSaveOpen] = useState(false);
   const [presetName, setPresetName] = useState("");
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
+
+  // Apply ?q / ?store / ?category from URL once on mount, then clear them
+  useEffect(() => {
+    const q = searchParams.get("q") ?? "";
+    const storeSlug = searchParams.get("store") ?? "";
+    const category = searchParams.get("category") ?? "";
+    if (!q && !storeSlug && !category) return;
+    setFilters((f) => ({
+      ...f,
+      q: q || f.q,
+      storeFilter: storeSlug || f.storeFilter,
+      categoryFilter: category || f.categoryFilter,
+    }));
+    setSearchParams({}, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const updateFilter = (patch: Partial<Filters>) => {
     setFilters((f) => ({ ...f, ...patch }));
