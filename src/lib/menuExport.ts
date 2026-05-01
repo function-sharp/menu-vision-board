@@ -93,32 +93,46 @@ function csvEscape(v: unknown): string {
 }
 
 export function buildMenuCsv(items: MenuExportItem[], meta: MenuExportMeta): string {
-  const headers = [
-    "Store",
-    "Category",
-    "Item",
-    "Description",
-    "Price",
-    "Currency",
-    "Created",
-    "Last edited",
-  ];
+  const cols = meta.columns && meta.columns.length ? meta.columns : DEFAULT_COLUMNS;
+  const colSet = new Set<ColumnKey>(cols);
+  // Always include store as a context column
+  const headers: string[] = ["Store"];
+  const colOrder: ColumnKey[] = [];
+  for (const c of ALL_COLUMNS) {
+    if (colSet.has(c.key)) {
+      headers.push(c.label);
+      colOrder.push(c.key);
+    }
+  }
   const lines: string[] = [headers.join(",")];
   for (const i of items) {
-    lines.push(
-      [
-        meta.storeName,
-        decodeText(i.category ?? ""),
-        decodeText(i.name),
-        decodeText(i.description ?? "").replace(/\s+/g, " "),
-        i.price != null ? Number(i.price).toFixed(2) : "",
-        i.currency ?? "ZAR",
-        i.created_at ? new Date(i.created_at).toISOString().slice(0, 10) : "",
-        i.manually_edited_at ? new Date(i.manually_edited_at).toISOString().slice(0, 10) : "",
-      ]
-        .map(csvEscape)
-        .join(","),
-    );
+    const row: unknown[] = [meta.storeName];
+    for (const key of colOrder) {
+      switch (key) {
+        case "name":
+          row.push(decodeText(i.name));
+          break;
+        case "category":
+          row.push(decodeText(i.category ?? ""));
+          break;
+        case "description":
+          row.push(decodeText(i.description ?? "").replace(/\s+/g, " "));
+          break;
+        case "price":
+          row.push(i.price != null ? Number(i.price).toFixed(2) : "");
+          break;
+        case "currency":
+          row.push(i.currency ?? "ZAR");
+          break;
+        case "created_at":
+          row.push(i.created_at ? new Date(i.created_at).toISOString().slice(0, 10) : "");
+          break;
+        case "manually_edited_at":
+          row.push(i.manually_edited_at ? new Date(i.manually_edited_at).toISOString().slice(0, 10) : "");
+          break;
+      }
+    }
+    lines.push(row.map(csvEscape).join(","));
   }
   return lines.join("\n");
 }
