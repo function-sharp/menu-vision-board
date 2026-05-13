@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useStoreBySlug, useStoreItems } from "@/hooks/useDashboardData";
@@ -24,6 +25,12 @@ export default function StoreDetail() {
   const { data: store, isLoading: sl } = useStoreBySlug(slug);
   const { data: items, isLoading: il } = useStoreItems(store?.id);
   const [q, setQ] = useState("");
+  usePageMeta({
+    title: store?.name ? `${store.name} · Col'Cacchio` : "Store · Col'Cacchio",
+    description: store?.name
+      ? `Menu, pricing, promotions and customer reviews for Col'Cacchio ${store.name}.`
+      : "Col'Cacchio store detail page with menu, pricing and reviews.",
+  });
 
   const grouped = useMemo(() => {
     if (!items) return [] as Array<{ category: string; items: typeof items }>;
