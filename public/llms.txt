@@ -1,0 +1,21 @@
+# Col'Cacchio Menu Dashboard
+
+> Internal dashboard for browsing Col'Cacchio store menus, prices, promotions, reviews, and Uber Eats coverage across all South African locations.
+
+## Pages
+
+- [Overview](/): KPI summary across all stores, items, and recent activity.
+- [Stores](/stores): Browse and search every Col'Cacchio store.
+- [Stores Overview](/stores-overview): Tabular comparison of all stores.
+- [Menu Browser](/menu): Filter menu items by store, category, and price.
+- [Item Comparison](/compare): Compare the same item across multiple stores.
+- [Categories & Pricing](/analytics): Pricing analytics by category and store.
+- [Promotions](/promotions): Active promotions, mechanics, and rationales.
+- [Reviews](/reviews): Google Maps reviews, sentiment, and AI insights.
+- [Uber Eats](/uber-eats): Uber Eats coverage and per-item links.
+
+## Optional
+
+- [Data Upload](/upload): Internal — Excel-based menu refresh.
+- [Activity Log](/activity): Internal — audit trail of dashboard activity.
+- [Sign in](/auth): Authentication.
