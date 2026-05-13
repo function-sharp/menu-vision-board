@@ -25,6 +25,7 @@ import {
   Activity,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 type LogRow = {
   id: string;
@@ -110,6 +111,7 @@ function downloadCsv(filename: string, csv: string) {
 }
 
 export default function ActivityLog() {
+  usePageMeta({ title: "Activity Log · Col'Cacchio", description: "Audit trail of dashboard activity, scrapes, uploads and edits." });
   const [q, setQ] = useState("");
   const [category, setCategory] = useState<Category | "all">("all");
   const [entityType, setEntityType] = useState<string>("all");
@@ -297,6 +299,7 @@ export default function ActivityLog() {
             <div className="relative flex-1 min-w-[240px]">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
+                aria-label="Search activity log"
                 placeholder="Search store name, item, preset name, user, ID..."
                 value={q}
                 onChange={(e) => setQ(e.target.value)}

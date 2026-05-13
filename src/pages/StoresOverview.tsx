@@ -22,6 +22,7 @@ import {
   ExternalLink,
   ChevronRight,
 } from "lucide-react";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 type SortKey =
   | "name"
@@ -54,6 +55,7 @@ type Row = {
 };
 
 export default function StoresOverview() {
+  usePageMeta({ title: "Stores Overview · Col'Cacchio", description: "Tabular comparison of all Col'Cacchio stores with menu, pricing and review metrics." });
   const { data: stores, isLoading: storesLoading } = useStores();
   const { data: items, isLoading: itemsLoading } = useAllItems();
   const { data: places } = useGooglePlaces();

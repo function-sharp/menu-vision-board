@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { SyncCenter } from "@/components/BulkScrapePanel";
 import { logActivity } from "@/lib/activityLog";
 import { StoreScrapeActions, ItemScrapeActions } from "@/components/ScrapeRowActions";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 function isValidUrl(value: string): boolean {
   if (!value) return false;
@@ -71,6 +72,7 @@ function downloadCsv(filename: string, headers: string[], rows: (string | number
 }
 
 export default function UberEats() {
+  usePageMeta({ title: "Uber Eats · Col'Cacchio", description: "Uber Eats coverage and per-item link status for all Col'Cacchio stores." });
   const { data: stores, isLoading: storesLoading } = useStores();
   const { data: items, isLoading: itemsLoading } = useAllItems();
   const queryClient = useQueryClient();
@@ -300,6 +302,7 @@ export default function UberEats() {
             <div className="relative md:col-span-2">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
+                aria-label="Search Uber Eats stores"
                 placeholder="Search stores..."
                 value={storeQuery}
                 onChange={(e) => { setStoreQuery(e.target.value); setStorePage(0); }}
@@ -380,7 +383,7 @@ export default function UberEats() {
                                     <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open
                                   </a>
                                 </Button>
-                                <Button size="sm" variant="ghost" onClick={() => copyUrl(s.uber_eats_url!)}>
+                                <Button size="sm" variant="ghost" aria-label="Copy Uber Eats store URL" onClick={() => copyUrl(s.uber_eats_url!)}>
                                   <Copy className="h-3.5 w-3.5" />
                                 </Button>
                               </>
@@ -420,6 +423,7 @@ export default function UberEats() {
             <div className="relative md:col-span-2">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
+                aria-label="Search Uber Eats menu items"
                 placeholder="Search items..."
                 value={itemQuery}
                 onChange={(e) => { setItemQuery(e.target.value); setItemPage(0); }}
@@ -529,7 +533,7 @@ export default function UberEats() {
                                   <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open
                                 </a>
                               </Button>
-                              <Button size="sm" variant="ghost" onClick={() => copyUrl(url)}>
+                              <Button size="sm" variant="ghost" aria-label="Copy Uber Eats item URL" onClick={() => copyUrl(url)}>
                                 <Copy className="h-3.5 w-3.5" />
                               </Button>
                             </div>

@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useStoreBySlug, useStoreItems } from "@/hooks/useDashboardData";
@@ -24,6 +25,12 @@ export default function StoreDetail() {
   const { data: store, isLoading: sl } = useStoreBySlug(slug);
   const { data: items, isLoading: il } = useStoreItems(store?.id);
   const [q, setQ] = useState("");
+  usePageMeta({
+    title: store?.name ? `${store.name} · Col'Cacchio` : "Store · Col'Cacchio",
+    description: store?.name
+      ? `Menu, pricing, promotions and customer reviews for Col'Cacchio ${store.name}.`
+      : "Col'Cacchio store detail page with menu, pricing and reviews.",
+  });
 
   const grouped = useMemo(() => {
     if (!items) return [] as Array<{ category: string; items: typeof items }>;
@@ -115,7 +122,7 @@ export default function StoreDetail() {
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="relative max-w-sm flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search this menu..." value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
+              <Input aria-label="Search this store's menu" placeholder="Search this menu..." value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
             </div>
             <MenuExportDialog
               store={{

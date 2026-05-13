@@ -10,8 +10,10 @@ import { ReviewsListTab } from "@/components/reviews/ReviewsListTab";
 import { InsightsTab } from "@/components/reviews/InsightsTab";
 import { ManageLinksTab } from "@/components/reviews/ManageLinksTab";
 import { ReviewFiltersBar, defaultScope, type ReviewScope } from "@/components/reviews/ReviewFiltersBar";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 export default function Reviews() {
+  usePageMeta({ title: "Customer Reviews · Col'Cacchio", description: "Google Maps reviews, sentiment analysis and AI insights for all Col'Cacchio stores." });
   const { data: places } = useGooglePlaces();
   const sync = useSyncReviews();
   const [searchParams, setSearchParams] = useSearchParams();

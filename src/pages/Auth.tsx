@@ -38,6 +38,7 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <h1 className="sr-only">Col'Cacchio Menu Dashboard — Sign in</h1>
       <Card className="w-full max-w-sm">
         <CardHeader className="space-y-3 text-center">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-md bg-primary text-primary-foreground overflow-hidden">

@@ -7,8 +7,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStores } from "@/hooks/useDashboardData";
 import { Star, MapPin, Phone, Search, ExternalLink } from "lucide-react";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 export default function Stores() {
+  usePageMeta({ title: "Stores · Col'Cacchio Dashboard", description: "Browse and search every Col'Cacchio store with location, contact, and rating details." });
   const { data: stores, isLoading } = useStores();
   const [q, setQ] = useState("");
   const [group, setGroup] = useState("all");
@@ -43,7 +45,7 @@ export default function Stores() {
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search by name or address..." value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
+          <Input aria-label="Search stores by name or address" placeholder="Search by name or address..." value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
         </div>
         <Select value={group} onValueChange={setGroup}>
           <SelectTrigger className="w-full sm:w-44"><SelectValue /></SelectTrigger>
