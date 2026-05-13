@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatZAR } from "@/lib/format";
 import {
-import { usePageMeta } from "@/hooks/usePageMeta";
   Store as StoreIcon,
   Search,
   ArrowUpDown,
@@ -23,6 +22,7 @@ import { usePageMeta } from "@/hooks/usePageMeta";
   ExternalLink,
   ChevronRight,
 } from "lucide-react";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 type SortKey =
   | "name"
