@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatZAR } from "@/lib/format";
 import {
+import { usePageMeta } from "@/hooks/usePageMeta";
   Store as StoreIcon,
   Search,
   ArrowUpDown,
@@ -54,6 +55,7 @@ type Row = {
 };
 
 export default function StoresOverview() {
+  usePageMeta({ title: "Stores Overview · Col'Cacchio", description: "Tabular comparison of all Col'Cacchio stores with menu, pricing and review metrics." });
   const { data: stores, isLoading: storesLoading } = useStores();
   const { data: items, isLoading: itemsLoading } = useAllItems();
   const { data: places } = useGooglePlaces();

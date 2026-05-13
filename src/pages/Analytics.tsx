@@ -4,8 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatZAR, decodeText } from "@/lib/format";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 export default function Analytics() {
+  usePageMeta({ title: "Categories & Pricing · Col'Cacchio", description: "Pricing and category analytics across the Col'Cacchio store network." });
   const { data: items, isLoading: il } = useAllItems();
   const { data: stores, isLoading: sl } = useStores();
 

@@ -8,8 +8,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatZAR, decodeText } from "@/lib/format";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Search, TrendingDown, TrendingUp } from "lucide-react";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 export default function ItemComparison() {
+  usePageMeta({ title: "Item Comparison · Col'Cacchio", description: "Compare the same Col'Cacchio menu item across multiple stores side by side." });
   const { data: items, isLoading } = useAllItems();
   const [q, setQ] = useState("Margherita");
 

@@ -18,6 +18,7 @@ import { Search, Download, Bookmark, BookmarkPlus, X, MoreVertical, Trash2, Exte
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { logActivity } from "@/lib/activityLog";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 const PAGE_SIZE = 50;
 
@@ -42,6 +43,7 @@ const QUICK_PRESETS: Array<{ name: string; filters: Filters }> = [
 ];
 
 export default function MenuBrowser() {
+  usePageMeta({ title: "Menu Browser · Col'Cacchio", description: "Filter Col'Cacchio menu items by store, category, and price across all locations." });
   const { data: items, isLoading } = useAllItems();
   const { data: stores } = useStores();
   const qc = useQueryClient();

@@ -10,6 +10,7 @@ import { Megaphone, Calendar, Search, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 const statusVariants: Record<string, string> = {
   Approved: "bg-accent/15 text-accent border-accent/30",
@@ -20,6 +21,7 @@ const statusVariants: Record<string, string> = {
 };
 
 export default function Promotions() {
+  usePageMeta({ title: "Promotions · Col'Cacchio", description: "Active Col'Cacchio promotions, mechanics and approval status across stores." });
   const { data: promos, isLoading } = usePromotions();
   const [q, setQ] = useState("");
   const [month, setMonth] = useState("all");

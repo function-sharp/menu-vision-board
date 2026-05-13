@@ -9,8 +9,10 @@ import { Stars } from "@/components/StarDistribution";
 import { formatZAR } from "@/lib/format";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ComposedChart, Line } from "recharts";
 import { Star, Store as StoreIcon, Utensils, TrendingUp, Layers, MessageSquare, ReplyAll, ArrowRight } from "lucide-react";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 export default function Overview() {
+  usePageMeta({ title: "Dashboard overview", description: "Overview of Col'Cacchio stores, menu items, pricing trends, and customer reviews." });
   const { data: stores, isLoading: sl } = useStores();
   const { data: items, isLoading: il } = useAllItems();
 

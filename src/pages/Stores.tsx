@@ -7,8 +7,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStores } from "@/hooks/useDashboardData";
 import { Star, MapPin, Phone, Search, ExternalLink } from "lucide-react";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 export default function Stores() {
+  usePageMeta({ title: "Stores · Col'Cacchio Dashboard", description: "Browse and search every Col'Cacchio store with location, contact, and rating details." });
   const { data: stores, isLoading } = useStores();
   const [q, setQ] = useState("");
   const [group, setGroup] = useState("all");

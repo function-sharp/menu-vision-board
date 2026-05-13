@@ -12,12 +12,14 @@ import { slugify, decodeText } from "@/lib/format";
 import { toast } from "sonner";
 import { logActivity } from "@/lib/activityLog";
 import { formatDistanceToNow } from "date-fns";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 type SyncState = { kind: "idle" } | { kind: "syncing" } | { kind: "done"; storesUpdated: number; promotionsUpserted: number; promotionsRemoved: number; unmatched: string[]; skipped: number } | { kind: "error"; msg: string };
 
 type Status = { kind: "idle" } | { kind: "parsing" } | { kind: "uploading"; progress: number } | { kind: "success"; storesInserted: number; storesMerged: number; itemsInserted: number; itemsMerged: number; itemsKept: number } | { kind: "error"; msg: string };
 
 export default function Upload() {
+  usePageMeta({ title: "Data Upload · Col'Cacchio", description: "Internal Excel-based menu refresh tool for the Col'Cacchio dashboard." });
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [syncStatus, setSyncStatus] = useState<SyncState>({ kind: "idle" });
   const [filename, setFilename] = useState("");

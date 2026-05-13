@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { SyncCenter } from "@/components/BulkScrapePanel";
 import { logActivity } from "@/lib/activityLog";
 import { StoreScrapeActions, ItemScrapeActions } from "@/components/ScrapeRowActions";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 function isValidUrl(value: string): boolean {
   if (!value) return false;
@@ -71,6 +72,7 @@ function downloadCsv(filename: string, headers: string[], rows: (string | number
 }
 
 export default function UberEats() {
+  usePageMeta({ title: "Uber Eats · Col'Cacchio", description: "Uber Eats coverage and per-item link status for all Col'Cacchio stores." });
   const { data: stores, isLoading: storesLoading } = useStores();
   const { data: items, isLoading: itemsLoading } = useAllItems();
   const queryClient = useQueryClient();
