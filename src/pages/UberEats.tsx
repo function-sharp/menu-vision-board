@@ -302,6 +302,7 @@ export default function UberEats() {
             <div className="relative md:col-span-2">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
+                aria-label="Search Uber Eats stores"
                 placeholder="Search stores..."
                 value={storeQuery}
                 onChange={(e) => { setStoreQuery(e.target.value); setStorePage(0); }}
@@ -382,7 +383,7 @@ export default function UberEats() {
                                     <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open
                                   </a>
                                 </Button>
-                                <Button size="sm" variant="ghost" onClick={() => copyUrl(s.uber_eats_url!)}>
+                                <Button size="sm" variant="ghost" aria-label="Copy Uber Eats store URL" onClick={() => copyUrl(s.uber_eats_url!)}>
                                   <Copy className="h-3.5 w-3.5" />
                                 </Button>
                               </>
@@ -422,6 +423,7 @@ export default function UberEats() {
             <div className="relative md:col-span-2">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
+                aria-label="Search Uber Eats menu items"
                 placeholder="Search items..."
                 value={itemQuery}
                 onChange={(e) => { setItemQuery(e.target.value); setItemPage(0); }}
@@ -531,7 +533,7 @@ export default function UberEats() {
                                   <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open
                                 </a>
                               </Button>
-                              <Button size="sm" variant="ghost" onClick={() => copyUrl(url)}>
+                              <Button size="sm" variant="ghost" aria-label="Copy Uber Eats item URL" onClick={() => copyUrl(url)}>
                                 <Copy className="h-3.5 w-3.5" />
                               </Button>
                             </div>

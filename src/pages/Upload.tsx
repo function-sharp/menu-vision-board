@@ -143,10 +143,14 @@ export default function Upload() {
         <CardHeader><CardTitle className="text-base">Upload Excel file</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div
+            role="button"
+            tabIndex={0}
+            aria-label="Upload Excel file: drop a file here or press Enter to browse"
             onClick={() => fileRef.current?.click()}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileRef.current?.click(); } }}
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
-            className="border-2 border-dashed rounded-lg p-10 text-center cursor-pointer hover:border-primary/60 hover:bg-muted/30 transition-colors"
+            className="border-2 border-dashed rounded-lg p-10 text-center cursor-pointer hover:border-primary/60 hover:bg-muted/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <UploadIcon className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
             <div className="font-medium">Drop your .xlsx file here, or click to browse</div>

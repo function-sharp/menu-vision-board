@@ -122,7 +122,7 @@ export default function StoreDetail() {
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="relative max-w-sm flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search this menu..." value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
+              <Input aria-label="Search this store's menu" placeholder="Search this menu..." value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
             </div>
             <MenuExportDialog
               store={{

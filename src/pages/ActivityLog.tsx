@@ -299,6 +299,7 @@ export default function ActivityLog() {
             <div className="relative flex-1 min-w-[240px]">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
+                aria-label="Search activity log"
                 placeholder="Search store name, item, preset name, user, ID..."
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
