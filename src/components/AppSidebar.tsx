@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Store, Utensils, GitCompare, BarChart3, Upload, Megaphone, ExternalLink, LogOut, History, TableProperties, MessageSquare } from "lucide-react";
+import { LayoutDashboard, Store, Utensils, GitCompare, BarChart3, Upload, Megaphone, ExternalLink, LogOut, History, TableProperties, MessageSquare, Users } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
 import {
   Sidebar,
@@ -15,6 +15,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { toast } from "sonner";
 
 const items = [
@@ -31,12 +32,17 @@ const items = [
   { title: "Activity Log", url: "/activity", icon: History },
 ];
 
+const adminItems = [
+  { title: "User Management", url: "/admin/users", icon: Users },
+];
+
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const isAdmin = useIsAdmin();
   const isActive = (url: string) => (url === "/" ? pathname === "/" : pathname.startsWith(url));
 
   const handleSignOut = async () => {
@@ -70,6 +76,25 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        {isAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Admin</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {adminItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={isActive(item.url)}>
+                      <NavLink to={item.url} className="flex items-center gap-2">
+                        <item.icon className="h-4 w-4" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border">
         {!collapsed && user?.email && (
