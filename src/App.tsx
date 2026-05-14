@@ -49,6 +49,7 @@ const App = () => (
                 <Route path="/upload" element={<Upload />} />
                 <Route path="/activity" element={<ActivityLog />} />
                 <Route path="/reviews" element={<Reviews />} />
+                <Route path="/admin/users" element={<AdminUsers />} />
               </Route>
             </Route>
             <Route path="*" element={<NotFound />} />
