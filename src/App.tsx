@@ -20,6 +20,7 @@ import Promotions from "./pages/Promotions";
 import UberEats from "./pages/UberEats";
 import ActivityLog from "./pages/ActivityLog";
 import Reviews from "./pages/Reviews";
+import AdminUsers from "./pages/AdminUsers";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 60_000 } } });
