@@ -42,6 +42,7 @@ export function AppSidebar() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const isAdmin = useIsAdmin();
   const isActive = (url: string) => (url === "/" ? pathname === "/" : pathname.startsWith(url));
 
   const handleSignOut = async () => {
