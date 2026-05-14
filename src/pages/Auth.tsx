@@ -13,6 +13,7 @@ export default function Auth() {
   const navigate = useNavigate();
   const location = useLocation();
   const { session, loading: authLoading } = useAuth();
+  const [mode, setMode] = useState<"signin" | "forgot">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -34,6 +35,21 @@ export default function Auth() {
     }
     toast.success("Signed in");
     navigate(from, { replace: true });
+  };
+
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setSubmitting(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Check your email for a reset link");
+    setMode("signin");
   };
 
   return (
