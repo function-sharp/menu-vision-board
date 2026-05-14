@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Store, Utensils, GitCompare, BarChart3, Upload, Megaphone, ExternalLink, LogOut, History, TableProperties, MessageSquare } from "lucide-react";
+import { LayoutDashboard, Store, Utensils, GitCompare, BarChart3, Upload, Megaphone, ExternalLink, LogOut, History, TableProperties, MessageSquare, Users } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
 import {
   Sidebar,
@@ -15,6 +15,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { toast } from "sonner";
 
 const items = [
@@ -29,6 +30,10 @@ const items = [
   { title: "Uber Eats", url: "/uber-eats", icon: ExternalLink },
   { title: "Data Upload", url: "/upload", icon: Upload },
   { title: "Activity Log", url: "/activity", icon: History },
+];
+
+const adminItems = [
+  { title: "User Management", url: "/admin/users", icon: Users },
 ];
 
 export function AppSidebar() {
