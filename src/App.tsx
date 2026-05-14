@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import AuthGuard from "./components/AuthGuard";
 import AppLayout from "./components/AppLayout";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import Overview from "./pages/Overview";
 import Stores from "./pages/Stores";
 import StoresOverview from "./pages/StoresOverview";
@@ -32,6 +33,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route element={<AuthGuard />}>
               <Route element={<AppLayout />}>
                 <Route path="/" element={<Overview />} />
