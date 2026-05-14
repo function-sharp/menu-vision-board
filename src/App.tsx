@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import AuthGuard from "./components/AuthGuard";
 import AppLayout from "./components/AppLayout";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import Overview from "./pages/Overview";
 import Stores from "./pages/Stores";
 import StoresOverview from "./pages/StoresOverview";
