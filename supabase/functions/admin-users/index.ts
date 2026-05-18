@@ -69,6 +69,9 @@ Deno.serve(async (req) => {
       const isAdminFlag = Boolean(body?.is_admin);
       const redirectTo = String(body?.redirect_to ?? "");
       if (!email || !email.includes("@")) return json({ error: "Valid email required" }, 400);
+      if (!email.endsWith("@colcacchio.co.za")) {
+        return json({ error: "Only @colcacchio.co.za addresses are allowed" }, 400);
+      }
 
       const tempPassword = crypto.randomUUID() + "Aa1!";
       const { data: created, error: createErr } = await admin.auth.admin.createUser({
@@ -82,26 +85,26 @@ Deno.serve(async (req) => {
         await admin.from("user_roles").insert({ user_id: created.user.id, role: "admin" });
       }
 
-      // Send password reset email so user can set their own password
-      await admin.auth.resetPasswordForEmail(email, {
-        redirectTo: redirectTo || undefined,
+      // Send magic sign-in link so the user can log in passwordlessly
+      await admin.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: false, emailRedirectTo: redirectTo || undefined },
       });
 
       return json({ user: created.user });
     }
 
-    if (action === "reset_password") {
+    if (action === "send_magic_link") {
       const email = String(body?.email ?? "").trim().toLowerCase();
       const redirectTo = String(body?.redirect_to ?? "");
       if (!email) return json({ error: "Email required" }, 400);
-      const { error } = await admin.auth.resetPasswordForEmail(email, {
-        redirectTo: redirectTo || undefined,
+      const { error } = await admin.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: false, emailRedirectTo: redirectTo || undefined },
       });
       if (error) return json({ error: error.message }, 500);
       return json({ ok: true });
     }
-
-    if (action === "ban") {
       const userId = String(body?.user_id ?? "");
       if (!userId) return json({ error: "user_id required" }, 400);
       const { error } = await admin.auth.admin.updateUserById(userId, {
