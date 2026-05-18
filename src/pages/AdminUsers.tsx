@@ -64,10 +64,10 @@ export default function AdminUsers() {
       callAdmin("create", {
         email: newEmail,
         is_admin: newIsAdmin,
-        redirect_to: `${window.location.origin}/reset-password`,
+        redirect_to: window.location.origin,
       }),
     onSuccess: () => {
-      toast.success("User created and reset email sent");
+      toast.success("User created and sign-in link sent");
       setCreateOpen(false);
       setNewEmail("");
       setNewIsAdmin(false);
@@ -78,11 +78,11 @@ export default function AdminUsers() {
 
   const resetMut = useMutation({
     mutationFn: (email: string) =>
-      callAdmin("reset_password", {
+      callAdmin("send_magic_link", {
         email,
-        redirect_to: `${window.location.origin}/reset-password`,
+        redirect_to: window.location.origin,
       }),
-    onSuccess: () => toast.success("Password reset email sent"),
+    onSuccess: () => toast.success("Sign-in link sent"),
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -154,7 +154,7 @@ export default function AdminUsers() {
               <DialogHeader>
                 <DialogTitle>Create new user</DialogTitle>
                 <DialogDescription>
-                  The user is auto-confirmed and will receive a password reset email to set their own password.
+                  The user is auto-confirmed and will receive a passwordless sign-in link by email. Only @colcacchio.co.za addresses are allowed.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-2">
@@ -243,7 +243,7 @@ export default function AdminUsers() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              title="Send password reset"
+                              title="Send sign-in link"
                               onClick={() => u.email && resetMut.mutate(u.email)}
                               disabled={!u.email || resetMut.isPending}
                             >
