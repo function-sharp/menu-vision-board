@@ -105,6 +105,8 @@ Deno.serve(async (req) => {
       if (error) return json({ error: error.message }, 500);
       return json({ ok: true });
     }
+
+    if (action === "ban") {
       const userId = String(body?.user_id ?? "");
       if (!userId) return json({ error: "user_id required" }, 400);
       const { error } = await admin.auth.admin.updateUserById(userId, {
